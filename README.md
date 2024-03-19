@@ -18,15 +18,40 @@
 **/cdn/master**
 ```
 {
-    "master": {
-        "ttl": 3
-    },
+    "expires_on": "",
+    "updated_on": "",
+    "scheme": "master",
     "nodes": {
-        "post": "/cdn/get/v8.1.68/post",
-        "user": "/cdn/get/v9.0.35/user",
-        "food": "/cdn/get/v1.8.52/food",
-        "emoji": "/cdn/get/v8.6.27/emoji",
-        "people": "/cdn/get/v8.1.15/people"
+        "post": {
+            "expires_on": "2024-03-20 00:50:19.208527",
+            "updated_on": "2024-03-20 00:49:59.208529",   
+            "url": "/cdn/get/v5.6.69/emoji",
+            "version": "v5.6.69"
+        }, 
+        "food": {
+            "expires_on": "2024-03-20 00:50:19.208507",
+            "updated_on": "2024-03-20 00:49:59.208511",
+            "url": "/cdn/get/v7.6.89/food",
+            "version": "v7.6.89"
+        },
+        "people": {
+            "expires_on": "2024-03-20 00:50:19.208549",
+            "updated_on": "2024-03-20 00:49:59.208552",
+            "url": "/cdn/get/v8.5.69/people",
+            "version": "v8.5.69"
+        },
+        "post": {
+            "expires_on": "2024-03-20 00:50:19.208444",
+            "updated_on": "2024-03-20 00:49:59.208457",
+            "url": "/cdn/get/v6.1.32/post",
+            "version": "v6.1.32"
+        },
+        "user": {
+            "expires_on": "2024-03-20 00:50:19.208487",
+            "updated_on": "2024-03-20 00:49:59.208490",
+            "url": "/cdn/get/v8.5.65/user",
+            "version": "v8.5.65"
+        }
     }
 }
 ```
@@ -34,9 +59,11 @@
 **/cdn/get/v8.1.68/post**
 ```
 {
+    "scheme": "node",
     "node": "post",
     "version": "v8.1.68",
     "expires_on": "2024-03-11 16:02:05.040831",
+    "updated_on": "2024-03-11 15:02:05.040831",
     "data": [
         {
             "id": 1,
@@ -78,3 +105,20 @@
 }
 ```
 
+### How does it work
+`python faker.py` 
+- Generates master and node data inside the content folder
+- `content/nodes/<nodename>/v<semver>.json` is the node file
+- `content/master.json` is the master file poiting references to each node file
+
+
+While serving the endpoints
+- checks on redis cache
+- if not found, checks on the previously expired log
+- if not in expired, checks the file
+- if file found and is not expired, then serves the file and loads to redis again
+- else aborts as expired
+
+## X-CACHE headers
+- X-CACHE = HIT (served from Redis)
+- X-CACHE = MISS (served from the content file)
