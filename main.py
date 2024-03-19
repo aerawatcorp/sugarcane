@@ -34,6 +34,13 @@ except Exception as exc:
 
 # Run the app
 if __name__ == "__main__":
+    # some random data initialization
+    from faker import rebuild_all_fake_data
+    rebuild_all_fake_data(directory=True, conn=r1)
+
+    # flask routes
     app.register_blueprint(mucize_blueprint)
     app.register_blueprint(mock_app_blueprint)
+
+    # run
     app.run(debug=True, port=LISTEN_PORT)

@@ -62,67 +62,40 @@ def fake_all_nodes():
         all_nodes_data[node_name] = fake_node_data(node_name, version=version, ttl=NODES_TTL)
     return all_nodes, all_nodes_data
 
-def write_everything_fake_to_content_dir():
+def rebuild_all_fake_data(directory=True, conn=None):
     all_nodes_info, all_nodes_data = fake_all_nodes()
+    master_data = fake_master_data(all_nodes_info)
+
+    if directory is False and conn is None:
+        return master_data, all_nodes_info, all_nodes_data
+
+    # for nodes
     for node_name, node_data in all_nodes_data.items():
-        node_file = os.path.join(CONTENT_ROOT, "nodes/", node_name + ".json")
-        with open(node_file, "w") as f:
-            print(f'Writing node {node_name} to {node_file}')
-            f.write(json.dumps(node_data, indent=4, sort_keys=True))
-    
-    master_file = os.path.join(CONTENT_ROOT, "master.json")
-    with open(master_file, "w") as f:
-        print(f'Writing master to {master_file}')
-        f.write(json.dumps(all_nodes_info, indent=4, sort_keys=True))
+        version = node_data["version"]
+        if directory:
+            node_dir = os.path.join(CONTENT_ROOT, "nodes/", node_name)
+            if not os.path.exists(node_dir):
+                os.makedirs(node_dir)
+            node_file = os.path.join(node_dir, f"{version}.json")
+            latest_node_file = os.path.join(node_dir, "latest.json")
+            with open(node_file, "w") as f:
+                print(f'Writing node {node_name}@{node_data["version"]} to {node_file}')
+                f.write(json.dumps(node_data, indent=4, sort_keys=True))
+            with open(latest_node_file, "w") as f:
+                print(f'Writing node {node_name}@{node_data["version"]} to {latest_node_file}')
+                f.write(json.dumps(node_data, indent=4, sort_keys=True))
+        if conn:
+            r_set(conn, f"{node_name}:{node_data['version']}", node_data, ttl=NODES_TTL)
+
+    # for master
+    if directory:
+        master_file = os.path.join(CONTENT_ROOT, "master.json")
+        with open(master_file, "w") as f:
+            print(f'Writing master to {master_file}')
+            f.write(json.dumps(master_data, indent=4, sort_keys=True))
+    if conn:
+        r_set(conn, MASTER_KEY, master_data, ttl=MASTER_TTL)
 
 if __name__ == "__main__":
-    write_everything_fake_to_content_dir()
-
-# def load_to_():
-#     for all_nodes_fake_data in fake_all_nodes():
-#     node_urls = {}
-#     for node_name in DATA_NODES:
-#         _url, semver, _ = random_versioned_node_url(node_name)
-#         node_urls[node_name] = {
-#             "url": _url,
-#             "version": semver,
-#             "expires_on": str(r_expires_on(NODES_TTL)),
-#             "updated_on": str(datetime.now()),
-#         }
-#         node_data = fake_node_data(node_name, version=semver, ttl=NODES_TTL)
-#         # r_set(conn, f"{node_name}:{semver}", node_data, ttl=NODES_TTL)
-
-#     master_data = fake_master_data(node_urls)
-#     # r_set(conn, MASTER_KEY, master_data, ttl=MASTER_TTL)
-
-# def populate_default_data(conn):
-#     node_urls = {}
-
-#     for node_name in DATA_NODES:
-#         _url, semver, _ = _random_versioned_node_url(node_name)
-#         node_urls[node_name] = {
-#             "url": _url,
-#             "version": semver,
-#             "expires_on": str(r_expires_on(NODES_TTL)),
-#             "updated_on": str(datetime.now()),
-#         }
-#         node_data = random_node_data(node_name, version=semver, ttl=NODES_TTL)
-#         r_set(conn, f"{node_name}:{semver}", node_data, ttl=NODES_TTL)
-
-#     master_data = {
-#         "ttl": MASTER_TTL,
-#         "expires_on": str(r_expires_on(MASTER_TTL)),
-#         "updated_on": str(datetime.now()),
-#         "nodes": node_urls,
-#     }
-#     r_set(conn, MASTER_KEY, master_data, ttl=MASTER_TTL)
-
-
-# def master(conn):
-#     master_data, ttl = r_get(conn, MASTER_KEY)
-#     if ttl is False:
-#         populate_default_data(conn)
-#         master_data, ttl = r_get(conn, MASTER_KEY)
-
-#     master_data["ttl"] = ttl
-#     return master_data
+    from redis_client import r1
+    rebuild_all_fake_data(directory=True, conn=r1)

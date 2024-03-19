@@ -5,13 +5,15 @@ DATA_NODES = ["post", "user", "food", "emoji", "people"]
 
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
-REDIS_DB = 0
+REDIS_DB = 1
 
-R_PREFIX = "cdn:mucize:"
+R_PREFIX = "mucize:"
 MASTER_KEY = "MASTER"
+EXPIRED_PREFIX = "EXPIRED"
+EXPIRED_TTL = 86400
 
 MASTER_TTL = 10
-NODES_TTL = 100
+NODES_TTL = 20
 
 SERVICE_HOST = "http://localhost"
 SERVICE_PORT = 8000

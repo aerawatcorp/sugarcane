@@ -8,7 +8,7 @@ import humanize
 import redis
 import requests
 
-from constants import (DATA_NODES, LISTEN_PORT, MASTER_KEY, MASTER_TTL,
+from constants import (DATA_NODES, LISTEN_PORT, MASTER_KEY, MASTER_TTL,EXPIRED_PREFIX,
                         NODES_TTL, R_PREFIX, SERVICE_PORT)
 
 from flask import make_response
@@ -20,7 +20,6 @@ def verify_redis_connection(conn):
 
 def r_expires_on(ttl):
     return datetime.now() + timedelta(seconds=ttl)
-
 
 def r_get(conn, key):
     _key = f"{R_PREFIX}:{key}"
@@ -42,10 +41,21 @@ def r_set(conn, key, value, ttl=None):
     conn.set(_key, json.dumps(value))
     conn.expire(_key, ttl)
 
+# remember if some key was expired earlier
+def r_log_expire(conn, key, ttl):
+    _key = f"{EXPIRED_PREFIX}:{key}"
+    r_set(conn, _key, "1", ttl=ttl)
 
-def json_response(data):
-    response = make_response(json.dumps(data))
+def r_was_expired(conn, key):
+    _key = f"{EXPIRED_PREFIX}:{key}"
+    value, _ = r_get(conn, _key)
+    return value == "1"
+
+def json_response(data, is_json=False, headers={}):
+    response = make_response(json.dumps(data, indent=4) if is_json is False else data)
     response.headers["Content-Type"] = "application/json"
+    for k, v in headers.items():
+        response.headers[k] = v
     return response
 
 def humanize_delta(date):
