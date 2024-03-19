@@ -1,4 +1,4 @@
-# Blinds - Cache Mock
+# Mucize - Cache Mock
 
 ## Routes
 - Master Schema - `/cdn/master`
