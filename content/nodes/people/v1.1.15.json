@@ -1,0 +1,46 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "value": "https://picsum.photos/id/766/200/300?type=people"
+        },
+        {
+            "id": 2,
+            "value": "https://picsum.photos/id/377/200/300?type=people"
+        },
+        {
+            "id": 3,
+            "value": "https://picsum.photos/id/581/200/300?type=people"
+        },
+        {
+            "id": 4,
+            "value": "https://picsum.photos/id/860/200/300?type=people"
+        },
+        {
+            "id": 5,
+            "value": "https://picsum.photos/id/863/200/300?type=people"
+        },
+        {
+            "id": 6,
+            "value": "https://picsum.photos/id/98/200/300?type=people"
+        },
+        {
+            "id": 7,
+            "value": "https://picsum.photos/id/23/200/300?type=people"
+        },
+        {
+            "id": 8,
+            "value": "https://picsum.photos/id/452/200/300?type=people"
+        },
+        {
+            "id": 9,
+            "value": "https://picsum.photos/id/988/200/300?type=people"
+        }
+    ],
+    "description": "This is some sample data for some node, that is consumed over the API",
+    "expires_on": "2024-03-20 00:47:41.643453",
+    "node": "people",
+    "scheme": "node",
+    "updated_on": "2024-03-20 00:47:21.643455",
+    "version": "v1.1.15"
+}

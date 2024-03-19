@@ -28,9 +28,11 @@ def browse(node_name):
 
     master_data = requests.get(f"{SERVICE_HOST}:{SERVICE_PORT}/cdn/master").json()
     node_url = master_data["nodes"][node_name]["url"]
-    node_data = requests.get(f"{SERVICE_HOST}:{SERVICE_PORT}{node_url}").json()
+    node_data = requests.get(f"{SERVICE_HOST}:{SERVICE_PORT}{node_url}")
+    if node_data.status_code != 200:
+        return abort(404)
     return browse_view(
-        ctx={"master_data": master_data, "node_data": node_data, "now": datetime.now()}
+        ctx={"master_data": master_data, "node_data": node_data.json(), "now": datetime.now()}
     )
 
 
