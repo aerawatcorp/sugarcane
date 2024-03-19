@@ -10,6 +10,7 @@ import json
 import random
 from datetime import datetime, timedelta
 import requests
+import sys
 
 # Create a Flask application
 app = Flask(__name__)
@@ -21,11 +22,17 @@ r1 = redis.StrictRedis(host="localhost", port=6379, db=0)
 # Redis connection 2
 r2 = redis.StrictRedis(host="localhost", port=6379, db=1)
 
-R_PREFIX = "cdn:blinds:"
+R_PREFIX = "cdn:mucize:"
 MASTER_KEY = "MASTER"
 MASTER_TTL = 10
 NODES_TTL = 100
 
+PORT = 8000
+
+try:
+    r1.ttl("{R_PREFIX}{MASTER_KEY}")
+except Exception as exc:
+    sys.exit(f"REDIS Exception : {exc}")
 
 def r_expires_on(ttl):
     return datetime.now() + timedelta(seconds=ttl)
@@ -147,8 +154,7 @@ def humanize_delta(date):
 @app.route("/")
 def index():
     from views import index_view
-
-    master_data = requests.get("http://localhost:5000/cdn/master").json()
+    master_data = requests.get(f"http://localhost:{PORT}/cdn/master").json()
     return index_view(ctx={"master_data": master_data, "now": datetime.now()})
 
 
@@ -156,9 +162,9 @@ def index():
 def browse(node_name):
     from views import browse_view
 
-    master_data = requests.get("http://localhost:5000/cdn/master").json()
+    master_data = requests.get(f"http://localhost:{PORT}/cdn/master").json()
     node_url = master_data["nodes"][node_name]["url"]
-    node_data = requests.get(f"http://localhost:5000{node_url}").json()
+    node_data = requests.get(f"http://localhost:{PORT}{node_url}").json()
     return browse_view(
         ctx={"master_data": master_data, "node_data": node_data, "now": datetime.now()}
     )
@@ -171,5 +177,4 @@ def page_not_found(error):
 
 # Run the app
 if __name__ == "__main__":
-
-    app.run(debug=True)
+    app.run(debug=True, port=PORT)

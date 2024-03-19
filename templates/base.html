@@ -10,16 +10,18 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/css/bootstrap.min.css"
     integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
 
-  <title>Hello, Blinds!</title>
+  <title>Hello, Mucize!</title>
 </head>
 
 <body>
-  <div class="container">
-    <div class="row">
-      <div class="col-md-12">
-        <h1>Blinds</h1>
-        <p>Statically versioned - <strong>content supplier implementation</strong> in Flask</p>
-      </div>
+  <div class="container mt-1">
+    <div class="jumbotron">
+      <div class="row">
+        <div class="col-md-12">
+          <h1><a href='/' style="color:black">Mucize</a></h1>
+          <p>Statically versioned - <strong>content supplier implementation</strong> in Flask</p>
+        </div>
+      </div>  
     </div>
     <div class="row">
       <div class="col-md-12">
@@ -28,9 +30,6 @@
         {% endfor %}
       </div>
     </div>
-    <div class="row">
-      <div class="col-md-12"><hr /></div>
-    </div>    
     {% block content %}{% endblock %}
   </div>
 
