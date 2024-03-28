@@ -4,25 +4,19 @@ is implemented in versioned, for a proper delivery, not to compromise
 the data availability and accuracy 
 """
 
-import os
 import json
+import os
 from datetime import datetime, timedelta
 
-from flask import Blueprint, abort, request, make_response
+from flask import Blueprint, abort, make_response, request
 
-from constants import CONTENT_ROOT, MASTER_KEY, EXPIRED_TTL, MASTER_TTL
-from helpers import (
-    json_response,
-    r_get,
-    r_was_expired,
-    r_log_expire,
-    r_set,
-    etag_master,
-    r_master_etag,
-    etag_node,
-    master_etag_verification,
-)
-from redis_client import r1
+from sugarlib.constants import (CONTENT_ROOT, EXPIRED_TTL, MASTER_KEY,
+                                MASTER_TTL)
+from sugarlib.helpers import (etag_master, etag_node, json_response,
+                              master_etag_verification)
+from sugarlib.redis_client import r1_cane as r1
+from sugarlib.redis_helpers import (r_get, r_log_expire, r_master_etag, r_set,
+                                    r_was_expired)
 
 sugarcane_blueprint = Blueprint("sugarcane", __name__)
 

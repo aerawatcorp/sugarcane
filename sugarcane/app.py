@@ -3,11 +3,16 @@ A Flask implementation of cache where a meta cache and individual cache
 is implemented in versioned, for a proper delivery, not to compromise
 the data availability and accuracy 
 """
-
+import os
 import json
 import random
 import sys
 from datetime import datetime, timedelta
+
+# To prevent relative import error
+from pathlib import Path
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+sys.path.append(BASE_DIR)
 
 import requests
 from flask import Flask, abort, make_response, request
@@ -22,15 +27,16 @@ from sugarlib.constants import (
     R_PREFIX,
 )
 
-from helpers import humanize_delta, verify_redis_connection
-from server import sugarcane_blueprint
+from sugarlib.helpers import humanize_delta
+from sugarlib.redis_helpers import verify_redis_connection
+from sugarcane.server import sugarcane_blueprint
 
 # Create a Flask application
 app = Flask(__name__)
 app.jinja_options["extensions"] = ["jinja2_humanize_extension.HumanizeExtension"]
 app.jinja_env.filters["humanize_delta"] = humanize_delta
 
-from redis_client import r1
+from sugarlib.redis_client import r1_cane as r1
 
 # Verify if redis is running
 try:
