@@ -1,4 +1,4 @@
-# Mucize - Cache Mock
+# Sugarcane - Cache Mock
 
 ## Routes
 - Master Schema - `/cdn/master`
