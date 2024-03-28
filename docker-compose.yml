@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  webserver:
+    image: nginx:alpine
+    ports:
+      - "80:80"  # Map host port 80 to container port 80
+    volumes:
+      - ./webserver:/var/www/html  # Mount current directory's webserver folder to container's html directory
+    depends_on:
+      - database  # Webserver depends on database to be up before starting
+
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: mydatabase  # Set environment variable for database name
+      MYSQL_ROOT_PASSWORD: password  # Set password for the root user (consider using a stronger password)
+    volumes:
+      - mysql-data:/var/lib/mysql  # Persistent storage for database data
+
+volumes:
+  mysql-data:  # Define a named volume for database persistence
