@@ -6,12 +6,14 @@ services:
       context: ./sugarcane
       dockerfile: Dockerfile.sugarcane
     ports:
-      - "80:80" 
+      - "5000:5000"
     volumes:
+      - ./sugarlib:/app/sugarlib    
       - ./sugarcane:/app/sugarcane 
-      - ./sugarlib:/app/sugarlib 
       - ./content:/app/content
     command: ["python3", "sugarcane/app.py"]
+    environment:
+      - name=value
   demo:
     build:
       context: ./demo_application  # Build the image from the demo_application directory
@@ -19,9 +21,11 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./demo_application:/app  # Mount the local demo directory to the container
+      - ./demo_application:/app/demo_application  # Mount the local demo directory to the container
     depends_on:
       - sugarcane  # Demo depends on sugarcane to be up before starting
+    environment:
+      - name=value
   content:
     image: "mucize-sugarcane"
     volumes:
@@ -30,6 +34,8 @@ services:
     command: ["python3", "content/faker.py", "loop"]
     depends_on:
       - "redis"
+    environment:
+      - name=value
   redis:
     image: "redis:alpine"
     ports:
