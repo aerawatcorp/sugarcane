@@ -1,41 +1,47 @@
-# This is a mock application implementation in Flask
+"""
+A Flask implementation of cache where a meta cache and individual cache
+is implemented in versioned, for a proper delivery, not to compromise
+the data availability and accuracy 
+"""
 
+import json
 import random
 import sys
 from datetime import datetime, timedelta
 
-import redis
 import requests
-from flask import Flask, abort, make_response, request, json
+from flask import Flask, abort, make_response, request
 
-from constants import (DATA_NODES, LISTEN_PORT, MASTER_KEY, MASTER_TTL,
-                        NODES_TTL, R_PREFIX, SERVICE_PORT, SERVICE_HOST)
+from sugarlib.constants import (
+    DATA_NODES,
+    CANE_SERVER_LISTEN_HOST, 
+    CANE_SERVER_LISTEN_PORT,
+    MASTER_KEY,
+    MASTER_TTL,
+    NODES_TTL,
+    R_PREFIX,
+)
 
-from flask import Blueprint
+from helpers import humanize_delta, verify_redis_connection
+from server import sugarcane_blueprint
 
-mock_app_blueprint = Blueprint('mock_app', __name__)
+# Create a Flask application
+app = Flask(__name__)
+app.jinja_options["extensions"] = ["jinja2_humanize_extension.HumanizeExtension"]
+app.jinja_env.filters["humanize_delta"] = humanize_delta
 
-@mock_app_blueprint.route("/")
-def index():
-    from views import index_view
-    master_data = requests.get(f"{SERVICE_HOST}:{SERVICE_PORT}/cdn/master").json()
-    return index_view(ctx={"master_data": master_data, "now": datetime.now()})
+from redis_client import r1
 
+# Verify if redis is running
+try:
+    verify_redis_connection(r1)
+except Exception as exc:
+    sys.exit(f"REDIS Exception : {exc}")
 
-@mock_app_blueprint.route("/browse/<node_name>")
-def browse(node_name):
-    from views import browse_view
+# Run the app
+if __name__ == "__main__":
+    # flask routes
+    app.register_blueprint(sugarcane_blueprint)
 
-    master_data = requests.get(f"{SERVICE_HOST}:{SERVICE_PORT}/cdn/master").json()
-    node_url = master_data["nodes"][node_name]["url"]
-    node_data = requests.get(f"{SERVICE_HOST}:{SERVICE_PORT}{node_url}")
-    if node_data.status_code != 200:
-        return abort(404)
-    return browse_view(
-        ctx={"master_data": master_data, "node_data": node_data.json(), "now": datetime.now()}
-    )
-
-
-@mock_app_blueprint.errorhandler(404)
-def page_not_found(error):
-    return "404 Not Found", 404
+    # run
+    app.run(debug=True, port=CANE_SERVER_LISTEN_PORT, host=CANE_SERVER_LISTEN_HOST)

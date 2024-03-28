@@ -1,22 +1,36 @@
 version: "3.8"
 
 services:
-  webserver:
-    image: nginx:alpine
+  sugarcane:
+    build:
+      context: ./sugarcane
+      dockerfile: Dockerfile.sugarcane
     ports:
-      - "80:80"  # Map host port 80 to container port 80
+      - "80:80" 
     volumes:
-      - ./webserver:/var/www/html  # Mount current directory's webserver folder to container's html directory
+      - ./sugarcane:/app/sugarcane 
+      - ./sugarlib:/app/sugarlib 
+      - ./content:/app/content
+    command: ["python3", "sugarcane/app.py"]
+  demo:
+    build:
+      context: ./demo_application  # Build the image from the demo_application directory
+      dockerfile: Dockerfile.demo
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./demo_application:/app  # Mount the local demo directory to the container
     depends_on:
-      - database  # Webserver depends on database to be up before starting
-
-  database:
-    image: mysql:8.0
-    environment:
-      MYSQL_DATABASE: mydatabase  # Set environment variable for database name
-      MYSQL_ROOT_PASSWORD: password  # Set password for the root user (consider using a stronger password)
+      - sugarcane  # Demo depends on sugarcane to be up before starting
+  content:
+    image: "mucize-sugarcane"
     volumes:
-      - mysql-data:/var/lib/mysql  # Persistent storage for database data
-
-volumes:
-  mysql-data:  # Define a named volume for database persistence
+      - ./sugarlib:/app/sugarlib  # Mount the local demo directory to the container
+      - ./content:/app/content
+    command: ["python3", "content/faker.py", "loop"]
+    depends_on:
+      - "redis"
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "63791:6379"

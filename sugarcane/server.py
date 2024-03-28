@@ -26,6 +26,18 @@ from redis_client import r1
 
 sugarcane_blueprint = Blueprint("sugarcane", __name__)
 
+@sugarcane_blueprint.route("/")
+def home():
+    return json_response(
+        {
+            "message": "Welcome to the Sugarcane Server",
+            "apis": {
+                "master": "/cdn/master",
+                "nodes": "/cdn/get/<version>/<node_name>",
+            }
+        }
+    )
+
 
 # Define a route for the home page
 @sugarcane_blueprint.route("/cdn/master")

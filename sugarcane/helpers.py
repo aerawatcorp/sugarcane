@@ -11,13 +11,11 @@ from flask import make_response
 
 from constants import (
     DATA_NODES,
-    LISTEN_PORT,
     MASTER_KEY,
     MASTER_TTL,
     EXPIRED_PREFIX,
     NODES_TTL,
     R_PREFIX,
-    SERVICE_PORT,
 )
 
 

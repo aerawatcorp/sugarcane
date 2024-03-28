@@ -1,11 +1,15 @@
 import os
 
-CONTENT_ROOT = os.path.join(os.path.dirname(__file__), "content/")
+CONTENT_ROOT = os.path.join(os.path.dirname(__file__), "../content/datadir/")
 DATA_NODES = ["post", "user", "food", "emoji", "people"]
 
-REDIS_HOST = "localhost"
-REDIS_PORT = 6379
-REDIS_DB = 1
+REDIS_HOST_CANE = "redis"
+REDIS_PORT_CANE = 6379
+REDIS_DB_CANE = 1
+
+REDIS_HOST_DEMO = "redis"
+REDIS_PORT_DEMO = 6379
+REDIS_DB_DEMO = 2
 
 R_PREFIX = "cane:"
 MASTER_KEY = "MASTER"

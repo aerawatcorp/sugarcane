@@ -7,19 +7,14 @@ import humanize
 import redis
 import requests
 
-from flask import make_response
-
-from constants import (
+from sugarlib.constants import (
     DATA_NODES,
-    LISTEN_PORT,
     MASTER_KEY,
     MASTER_TTL,
     EXPIRED_PREFIX,
     NODES_TTL,
     R_PREFIX,
-    SERVICE_PORT,
 )
-
 
 def verify_redis_connection(conn):
     # Verify if redis is running, by simply fetching a TTL value
@@ -70,37 +65,3 @@ def r_was_expired(conn, key):
     _key = f"{EXPIRED_PREFIX}:{key}"
     value, _ = r_get(conn, _key)
     return value == "1"
-
-
-def json_response(data, is_json=False, headers={}, etag=None):
-    response = make_response(json.dumps(data, indent=4) if is_json is False else data)
-    response.headers["Content-Type"] = "application/json"
-    for k, v in headers.items():
-        response.headers[k] = v
-    if etag:
-        response.headers["Etag"] = etag
-    return response
-
-
-def humanize_delta(date):
-    return humanize.precisedelta(
-        datetime.now() - datetime.strptime(date, "%Y-%m-%d %H:%M:%S.%f"),
-        minimum_unit="seconds",
-    )
-
-
-def etag_master(updated_on):
-    _etag = updated_on.replace(" ", "").replace(":", "").replace("-", "")
-    return f"MASTER.{_etag}"
-
-
-def etag_node(node_name, version):
-    return f"NODE.{node_name.upper()}.{version}"
-
-
-def master_etag_verification(request, conn):
-    etag = request.headers.get("If-None-Match")
-    if etag:
-        stored_etag = r_master_etag(conn)
-        return stored_etag == etag
-    return None

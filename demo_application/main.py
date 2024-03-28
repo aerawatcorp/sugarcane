@@ -12,18 +12,19 @@ from datetime import datetime, timedelta
 import requests
 from flask import Flask, abort, make_response, request
 
-from constants import (
+from ..sugarlib.constants import (
     DATA_NODES,
-    LISTEN_PORT,
     MASTER_KEY,
     MASTER_TTL,
     NODES_TTL,
     R_PREFIX,
-    SERVICE_PORT,
+    CANE_SERVER_HOST, 
+    CANE_SERVER_PORT,
+    DEMO_APP_HOST,
+    DEMO_APP_PORT    
 )
 
 from helpers import humanize_delta, verify_redis_connection
-from sugarcane import sugarcane_blueprint
 from app import mock_app_blueprint
 
 # Create a Flask application
@@ -42,13 +43,7 @@ except Exception as exc:
 # Run the app
 if __name__ == "__main__":
     # some random data initialization
-    from faker import rebuild_all_fake_data
-
-    rebuild_all_fake_data(directory=True, conn=r1)
-
-    # flask routes
-    app.register_blueprint(sugarcane_blueprint)
     app.register_blueprint(mock_app_blueprint)
 
     # run
-    app.run(debug=True, port=LISTEN_PORT)
+    app.run(debug=True, port=DEMO_APP_PORT, host=DEMO_APP_HOST)
