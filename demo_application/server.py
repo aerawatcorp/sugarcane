@@ -11,6 +11,9 @@ from flask import Flask, abort, make_response, request, json
 from sugarlib.constants import (DATA_NODES, MASTER_KEY, MASTER_TTL,
                         NODES_TTL, R_PREFIX, DEMO_APP_CANE_SERVER_HOST)
 
+# @TODO : 
+# Implement API caching in the demo application now
+
 from flask import Blueprint
 
 mock_app_blueprint = Blueprint('mock_app', __name__)
