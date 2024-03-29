@@ -2,4 +2,3 @@ __pycache__/
 *.rdb
 *.pyc
 .code-workspace
-content/
