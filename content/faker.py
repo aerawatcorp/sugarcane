@@ -57,7 +57,12 @@ def fake_node_data(node_name, version=None, ttl=None):
         "data": [
             {
                 "id": idx,
-                "value": f"https://picsum.photos/id/{random.choice(range(1, 1000))}/200/300?type={node_name}",
+                "value": random.choice(
+                    [
+                        f"https://picsum.photos/id/{random.choice(range(1, 1000))}/200/300?type={node_name}",
+                        f"https://source.unsplash.com/random/200×300/?{node_name}",
+                    ]
+                ),
             }
             for idx in range(1, 10)
         ],
@@ -133,5 +138,6 @@ if __name__ == "__main__":
 
     while True:
         rebuild_all_fake_data(directory=True, conn=r1, node=None)
-        print("Sleeping for 100 seconds...")
-        time.sleep(100)
+        sleeptime = int(NODES_TTL * .85)
+        print(f"Sleeping for {sleeptime} seconds...")
+        time.sleep(sleeptime)
