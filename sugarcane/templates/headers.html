@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12"><hr /></div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <table class="table table-bordered table-striped">
+      <tr>
+        <th>Request</th>
+        <th>Request Headers</th>
+        <th>Response</th>
+        <th>Response Headers</th>
+      </tr>
+    <tr>
+      <td>
+        <pre>{{request.body|pretty}}</pre>
+      </td>
+      <td><pre>{{request.headers|pretty}}</pre>
+      </td>
+      <td>{{response.text}}
+      </td>
+      <td>
+       <pre> {{response.headers|pretty}}</pre>
+      </td>
+    </tr>
+    <tr>
+        <td colspan="4">
+            <pre>{{me.headers}}</pre>
+            <br />
+            {{me.body}}
+        </td>
+    </tr>
+  </table>
+  </div>
+</div>
+
+{% endblock %}

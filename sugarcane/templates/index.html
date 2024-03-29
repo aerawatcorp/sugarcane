@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-md-6">
+    Last modified : {{ master_data.updated_on }}
+    <br />
+        <small>{{master_data.updated_on|humanize_delta}} ago</small>
+          </small>
+  </div>
+  <div class="col-md-6">
+    Expires on : {{ master_data.expires_on }}
+    <br />
+        <small> in {{master_data.expires_on|humanize_delta}} </small>
+          </small>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12"><hr /></div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <table class="table table-bordered table-striped">
+      <caption>Currently available nodes</caption>
+      <tr>
+        <th>Node</th>
+        <th>Updated on</th>
+        <th>Expires on</th>
+        <th>URL</th>
+        <th>Version</th>
+      </tr>
+    {% for node, node_data in master_data.nodes.items() %}
+    <tr>
+      <td>
+        {{node}}
+      </td>
+      <td>{{node_data.updated_on}}
+        <br />
+      <small>{{node_data.updated_on|humanize_delta}} ago</small>
+        </small>
+
+
+      </td>
+      <td>{{node_data.expires_on}}
+        <br />
+        <small>in {{node_data.expires_on|humanize_delta}} </small>
+          </small>
+
+      </td>
+      <td>
+        <a href={{url_for('mock_app.browse', node_name=node)}}>{{url_for('mock_app.browse', node_name=node)}}</a>
+      </td>
+      <td>{{node_data.version}}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+
+{% endblock %}
