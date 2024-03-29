@@ -2,3 +2,6 @@ __pycache__/
 *.rdb
 *.pyc
 .code-workspace
+content/datadir/
+demo_application/content/nodes/
+sugarcane/content/nodes/
