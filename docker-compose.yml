@@ -15,8 +15,13 @@ services:
     environment:
       - REDIS_HOST_CANE=redis
       - REDIS_PORT_CANE=6379
+      - REDIS_DB_CANE=1
       - CANE_SERVER_LISTEN_HOST=0.0.0.0
       - CANE_SERVER_LISTEN_PORT=8000
+      - R_PREFIX=CANE
+      - MASTER_KEY=MASTER
+      - EXPIRED_PREFIX=EXPIRED
+      - EXPIRED_TTL=86400
     depends_on:
       - redis
   demo:
@@ -34,9 +39,14 @@ services:
     environment:
       - REDIS_HOST_DEMO=redis
       - REDIS_PORT_DEMO=6379
+      - REDIS_DB_DEMO=2
       - DEMO_APP_CANE_SERVER_HOST=http://sugarcane:8000
       - DEMO_APP_HOST=0.0.0.0
       - DEMO_APP_PORT=5000
+      - DEMO_APP_R_PREFIX_NODE=CC:NODE
+      - DEMO_APP_R_PREFIX_MASTER=CC:MASTER1
+      - MASTER_TTL=10
+      - NODES_TTL=100
     command: ["python3", "demo_application/app.py"]
   content:
     image: "mucize-sugarcane"

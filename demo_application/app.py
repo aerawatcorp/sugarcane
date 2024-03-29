@@ -31,6 +31,8 @@ from sugarlib.constants import (
 
 from sugarlib.helpers import humanize_delta
 from sugarlib.redis_helpers import verify_redis_connection
+from demo_application.helpers import fetch_master_schema
+
 from demo_application.server import mock_app_blueprint
 
 # Create a Flask application
@@ -48,7 +50,7 @@ except Exception as exc:
 
 # Run the app
 if __name__ == "__main__":
-    # some random data initialization
+    # some random data initialization    
     app.register_blueprint(mock_app_blueprint)
 
     # run

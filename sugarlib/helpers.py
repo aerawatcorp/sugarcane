@@ -22,9 +22,9 @@ def json_response(data, is_json=False, headers={}, etag=None):
     return response
 
 
-def humanize_delta(date):
+def humanize_delta(date_value):
     return humanize.precisedelta(
-        datetime.now() - datetime.strptime(date, "%Y-%m-%d %H:%M:%S.%f"),
+        datetime.now() - datetime.strptime(date_value, "%Y-%m-%d %H:%M:%S.%f"),
         minimum_unit="seconds",
     )
 
@@ -44,3 +44,9 @@ def master_etag_verification(request, conn):
         stored_etag = r_master_etag(conn)
         return stored_etag == etag
     return None
+
+def get_expires_on_ttl(expires_datetime):
+    ttl = (datetime.strptime(expires_datetime, "%Y-%m-%d %H:%M:%S.%f") - datetime.now()).total_seconds()
+    if ttl < 0:
+        return False
+    return int(ttl)
