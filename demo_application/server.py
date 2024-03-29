@@ -27,13 +27,10 @@ def index():
 def browse(node_name):
     from views import browse_view
 
-    master_data = requests.get(f"{DEMO_APP_CANE_SERVER_HOST}/cdn/master").json()
-    node_url = master_data["nodes"][node_name]["url"]
-    node_data = requests.get(f"{DEMO_APP_CANE_SERVER_HOST}{node_url}")
-    if node_data.status_code != 200:
-        return abort(404)
+    master_data = fetch_master_schema()
+    node_data = fetch_node_data(node_name)
     return browse_view(
-        ctx={"master_data": master_data, "node_data": node_data.json(), "now": datetime.now()}
+        ctx={"master_data": master_data, "node_data": node_data, "now": datetime.now()}
     )
 
 

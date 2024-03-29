@@ -36,8 +36,6 @@ def home():
 # Define a route for the home page
 @sugarcane_blueprint.route("/cdn/master")
 def cdn_master():
-    if master_etag_verification(request, r1) is True:
-        return make_response("", 304)
     cached_master, ttl = r_get(r1, MASTER_KEY)
     if ttl is not False:
         return json_response(
