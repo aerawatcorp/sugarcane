@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 
 # To prevent relative import error
 from pathlib import Path
+
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.append(BASE_DIR)
 
@@ -26,7 +27,7 @@ from sugarlib.constants import (
     R_PREFIX,
     DEMO_APP_CANE_SERVER_HOST,
     DEMO_APP_HOST,
-    DEMO_APP_PORT
+    DEMO_APP_PORT,
 )
 
 from sugarlib.helpers import humanize_delta
@@ -48,10 +49,8 @@ try:
 except Exception as exc:
     sys.exit(f"REDIS Exception : {exc}")
 
+app.register_blueprint(mock_app_blueprint)
+
 # Run the app
 if __name__ == "__main__":
-    # some random data initialization    
-    app.register_blueprint(mock_app_blueprint)
-
-    # run
     app.run(debug=True, port=DEMO_APP_PORT, host=DEMO_APP_HOST)
