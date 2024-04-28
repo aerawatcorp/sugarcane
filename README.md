@@ -1,5 +1,9 @@
 # Sugarcane - Cache Mock
 
+
+![sugarcane Prototype](.project/assets/sugarcane_proto.png)
+
+
 ## Routes
 - Master Schema - `/cdn/master`
 - Node Data - `/cdn/get/<version>/<node_name>`
