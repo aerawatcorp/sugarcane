@@ -54,7 +54,8 @@ def fetch_master_schema(force_refresh=False):
     r_set(conn, DEMO_APP_R_PREFIX_MASTER, response, ttl=ttl)
     return response
 
-def fetch_node_data(node_name):
+
+def fetch_node_and_master_data(node_name):
     """
     Load the data for the given node from the Cane server
     """
@@ -64,8 +65,10 @@ def fetch_node_data(node_name):
         expires_on = node_data.get('expires_on', None)
         ttl = get_expires_on_ttl(expires_on) if expires_on else NODES_TTL
         url = node_data["url"]
-        return node_data, url, ttl
-    _, node_url, ttl = _node_object_from_master(node_name)
+        return (node_data, url, ttl), master_data
+
+    (_, node_url, ttl), master_data = _node_object_from_master(node_name)
     if ttl is False:
-        _, node_url, ttl = _node_object_from_master(node_name, force_master=True)
-    return cached_request(node_url, cache_key=get_node_cache_key(node_name))
+        (_, node_url, ttl), master_data = _node_object_from_master(node_name, force_master=True)
+
+    return cached_request(node_url, cache_key=get_node_cache_key(node_name)), master_data

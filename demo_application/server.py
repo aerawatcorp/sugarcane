@@ -16,7 +16,7 @@ from sugarlib.constants import (
     R_PREFIX,
     DEMO_APP_CANE_SERVER_HOST,
 )
-from demo_application.helpers import fetch_master_schema, fetch_node_data
+from demo_application.helpers import fetch_master_schema, fetch_node_and_master_data
 from demo_application.views import index_view, browse_view
 
 from flask import Blueprint
@@ -32,8 +32,7 @@ def index():
 
 @mock_app_blueprint.route("/browse/<node_name>")
 def browse(node_name):
-    master_data = fetch_master_schema()
-    node_data = fetch_node_data(node_name)
+    node_data, master_data = fetch_node_and_master_data(node_name)
     return browse_view(
         ctx={"master_data": master_data, "node_data": node_data, "now": datetime.now()}
     )
