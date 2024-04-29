@@ -1,4 +1,5 @@
 import json
+import os
 import random
 import sys
 from datetime import datetime, timedelta
@@ -9,7 +10,8 @@ import requests
 
 from flask import make_response
 
-from constants import (
+from sugarlib.constants import (
+    CONTENT_ROOT,
     DATA_NODES,
     MASTER_KEY,
     MASTER_TTL,
@@ -102,3 +104,23 @@ def master_etag_verification(request, conn):
         stored_etag = r_master_etag(conn)
         return stored_etag == etag
     return None
+
+
+def update_data_expiry_datetime_if_expired(master_data):
+    """
+        Extends expires_on by MASTER_TTL if data is expired
+        and updates on master.json file as well
+    """
+    expires_on = master_data.get("expires_on", "")
+    expires_on_datetime = datetime.strptime(expires_on, "%Y-%m-%d %H:%M:%S.%f")
+    datetime_now = datetime.now()
+    if expires_on_datetime < datetime_now:
+        # master_data is expired on the json
+        # extending expires_on by master_ttl
+        master_data["expires_on"] = str(r_expires_on(MASTER_TTL))
+        master_data["updated_on"] = str(datetime_now)
+
+        with open(os.path.join(CONTENT_ROOT, "master.json"), "w") as master_file:
+            json.dump(master_data, master_file)
+
+    return master_data

@@ -12,11 +12,16 @@ from flask import Blueprint, abort, make_response, request
 
 from sugarlib.constants import (CONTENT_ROOT, EXPIRED_TTL, MASTER_KEY,
                                 MASTER_TTL)
-from sugarlib.helpers import (etag_master, etag_node, json_response,
-                              master_etag_verification)
+from sugarlib.helpers import (
+    etag_master,
+    etag_node,
+    json_response,
+    master_etag_verification,
+)
 from sugarlib.redis_client import r1_cane as r1
 from sugarlib.redis_helpers import (r_get, r_log_expire, r_master_etag, r_set,
                                     r_was_expired)
+from sugarcane.helpers import update_data_expiry_datetime_if_expired
 
 sugarcane_blueprint = Blueprint("sugarcane", __name__)
 
@@ -48,8 +53,10 @@ def cdn_master():
         )
 
     # Presume that the master is not cached
-    master_in_file = open(os.path.join(CONTENT_ROOT, "master.json"))
-    master_in_file = json.load(master_in_file)
+    with open(os.path.join(CONTENT_ROOT, "master.json"), "r") as master_file:
+        master_in_file = json.load(master_file)
+
+    master_in_file = update_data_expiry_datetime_if_expired(master_in_file)
     r_set(
         r1, MASTER_KEY, master_in_file, ttl=MASTER_TTL
     )  # @TODO: check the ttl for master in this case.
