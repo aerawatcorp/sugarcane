@@ -8,7 +8,6 @@ import redis
 import requests
 
 from sugarlib.constants import (
-    DATA_NODES,
     MASTER_KEY,
     MASTER_TTL,
     EXPIRED_PREFIX,

@@ -6,10 +6,19 @@ from datetime import datetime, timedelta
 import humanize
 import redis
 import requests
+from flask import request
 from flask import make_response
 
-from sugarlib.constants import (DATA_NODES, EXPIRED_PREFIX, MASTER_KEY,
+from sugarlib.constants import (EXPIRED_PREFIX, MASTER_KEY,
                                 MASTER_TTL, NODES_TTL, R_PREFIX)
+
+
+def get_request_data():
+    """Get flask request data"""
+    if request.is_json:
+        return request.get_json()
+    else:
+        return request.form.to_dict()
 
 
 def json_response(data, is_json=False, headers={}, etag=None):
