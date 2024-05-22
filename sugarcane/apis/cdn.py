@@ -8,7 +8,8 @@ from flask import Blueprint, abort
 from sugarlib.constants import (
     CONTENT_ROOT, EXPIRED_TTL, MASTER_KEY, MASTER_TTL
 )
-from sugarlib.helpers import etag_master, json_response, etag_node
+from sugarcane.core.helpers import json_response
+from sugarlib.helpers import etag_master, etag_node
 from sugarlib.redis_client import r1_cane as r1
 from sugarlib.redis_helpers import (
     r_get, r_log_expire, r_master_etag, r_set, r_was_expired

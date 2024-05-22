@@ -1,7 +1,7 @@
 from flask import Blueprint
 from flask import Blueprint
 
-from sugarlib.helpers import json_response
+from sugarcane.core.helpers import json_response
 
 
 blueprint = Blueprint("index", __name__)
