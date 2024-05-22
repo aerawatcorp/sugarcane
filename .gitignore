@@ -180,6 +180,7 @@ pyrightconfig.json
 .code-workspace
 .vscode
 
+migrations/
 content/datadir/
 .docker-compose.override.yml
 sugarcane/content/nodes/
