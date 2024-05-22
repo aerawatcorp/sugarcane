@@ -1,66 +1,66 @@
 version: "3.8"
 
 services:
+  db:
+    image: postgres:16
+    container_name: ${PROJECT_NAME}-db
+    environment:
+      - POSTGRES_DB=${CANE_DATABASE_NAME}
+      - POSTGRES_USER=${CANE_DATABASE_USER}
+      - POSTGRES_PASSWORD=${CANE_DATABASE_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data/:rw
+    ports:
+      - ${EXPOSED_DATABASE_PORT}:5432
+    env_file:
+      - .env
+
+  sugarcanedj:
+    image: mucize-sugardj
+    container_name: ${PROJECT_NAME}-dj
+    build:
+      context: ./sugardj
+      dockerfile: Dockerfile
+    command: ["uwsgi", "--http", "0.0.0.0:8000", "--master", "-p", "4", "-w", "config.wsgi:application"]
+    env_file:
+      - .env
+    volumes:
+      - ./sugarlib:/app/sugarlib
+      - ./sugardj:/app/sugardj
+      - ./content:/app/content
+      - .env:/app/.env
+    ports:
+      - ${EXPOSED_CANE_DJ_PORT}:8000
+    depends_on:
+      - redis
+      - db
+  
   sugarcane:
-    image: "mucize-sugarcane"
+    image: mucize-sugarcane
+    container_name: ${PROJECT_NAME}-server
     build:
       context: ./sugarcane
-      dockerfile: Dockerfile.sugarcane
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "${EXPOSED_CANE_SERVER_PORT}:5000"
     volumes:
-      - ./sugarlib:/app/sugarlib    
-      - ./sugarcane:/app/sugarcane 
+      - ./sugarlib:/app/sugarlib
+      - ./sugarcane:/app/sugarcane
       - ./content:/app/content
-    command: ["python3", "sugarcane/app.py"]
-    environment:
-      - REDIS_HOST_CANE=redis
-      - REDIS_PORT_CANE=6379
-      - REDIS_DB_CANE=1
-      - CANE_SERVER_LISTEN_HOST=0.0.0.0
-      - CANE_SERVER_LISTEN_PORT=8000
-      - R_PREFIX=CANE
-      - MASTER_KEY=MASTER
-      - EXPIRED_PREFIX=EXPIRED
-      - EXPIRED_TTL=86400
+      - .env:/app/.env
+    command: ["uwsgi", "--http", "0.0.0.0:5000", "--master", "-p", "4", "-w", "sugarcane.app:app"]
+    env_file:
+      - .env
     depends_on:
       - redis
-  demo:
-    build:
-      context: ./demo_application  # Build the image from the demo_application directory
-      dockerfile: Dockerfile.demo
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./demo_application:/app/demo_application  # Mount the local demo directory to the container
-      - ./sugarlib:/app/sugarlib    
-    depends_on:
-      - sugarcane  # Demo depends on sugarcane to be up before starting
-      - redis
-    environment:
-      - REDIS_HOST_DEMO=redis
-      - REDIS_PORT_DEMO=6379
-      - REDIS_DB_DEMO=2
-      - DEMO_APP_CANE_SERVER_HOST=http://sugarcane:8000
-      - DEMO_APP_HOST=0.0.0.0
-      - DEMO_APP_PORT=5000
-      - DEMO_APP_R_PREFIX_NODE=CC:NODE
-      - DEMO_APP_R_PREFIX_MASTER=CC:MASTER1
-      - MASTER_TTL=10
-      - NODES_TTL=100
-    command: ["python3", "demo_application/app.py"]
-  content:
-    image: "mucize-sugarcane"
-    volumes:
-      - ./sugarlib:/app/sugarlib  # Mount the local demo directory to the container
-      - ./content:/app/content
-    command: ["python3", "content/faker.py", "loop"]
-    depends_on:
-      - "redis"
-    environment:
-      - REDIS_HOST_CANE=redis
-      - REDIS_PORT_CANE=6379
+
   redis:
     image: "redis:alpine"
+    container_name: ${PROJECT_NAME}-redis
     ports:
-      - "63791:6379"
+      - "${EXPOSED_REDIS_PORT}:6379"
+    env_file:
+      - .env
+
+volumes:
+  pgdata:
