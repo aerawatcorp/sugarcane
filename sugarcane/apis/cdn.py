@@ -6,7 +6,7 @@ from flask import Blueprint
 from flask import Blueprint, abort
 
 from sugarlib.constants import (
-    CONTENT_ROOT, EXPIRED_TTL, MASTER_KEY, MASTER_TTL
+    CONTENT_ROOT, EXPIRED_TTL, MASTER_KEY, MASTER_TTL, MASTER_SCHEMA_PATH
 )
 from sugarcane.core.helpers import json_response
 from sugarlib.helpers import etag_master, etag_node
@@ -38,10 +38,8 @@ def master():
 
     # In case of cache MISS, retrieve the data from file cache
     # Presume that the master is not cached
-    master_file = os.path.join(CONTENT_ROOT, "master.json")
-    
-    if os.path.exists(master_file):
-        master_in_file = open(master_file)
+    if os.path.exists(MASTER_SCHEMA_PATH):
+        master_in_file = open(MASTER_SCHEMA_PATH)
         master_in_file = json.load(master_in_file)
 
         expires_on = master_in_file["expires_on"]

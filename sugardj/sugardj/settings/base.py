@@ -19,7 +19,10 @@ from decouple import AutoConfig
 config = AutoConfig(search_path='/app')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Add parent directories (contents, sugarlib, ...)
+sys.path.append(str(BASE_DIR.parent))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -45,6 +48,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'django_extensions',
+    
     'autho',
 ]
 
@@ -118,7 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kathmandu'
 
 USE_I18N = True
 
@@ -143,5 +148,3 @@ JAZZMIN_SETTINGS = {
     "site_header": "Sugarcane",
     "site_brand": "Sugarcane",
 }
-
-sys.path.append(str(BASE_DIR.parent))
