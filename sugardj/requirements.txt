@@ -6,8 +6,12 @@
 #
 asgiref==3.8.1
     # via django
+asttokens==2.4.1
+    # via stack-data
 async-timeout==4.0.3
     # via redis
+backcall==0.2.0
+    # via ipython
 backports-zoneinfo==0.2.1
     # via django
 certifi==2024.2.2
@@ -16,17 +20,24 @@ cfgv==3.4.0
     # via pre-commit
 charset-normalizer==3.3.2
     # via requests
+decorator==5.1.1
+    # via ipython
 distlib==0.3.8
     # via virtualenv
 django==4.2.13
     # via
     #   -r requirements.in
+    #   django-extensions
     #   django-jazzmin
     #   django-shortuuidfield
+django-extensions==3.2.3
+    # via -r requirements.in
 django-jazzmin==3.0.0
     # via -r requirements.in
 django-shortuuidfield==0.1.3
     # via -r requirements.in
+executing==2.0.1
+    # via stack-data
 filelock==3.14.0
     # via virtualenv
 humanize==4.9.0
@@ -35,14 +46,34 @@ identify==2.5.36
     # via pre-commit
 idna==3.7
     # via requests
+ipython==8.12.3
+    # via -r requirements.in
+jedi==0.19.1
+    # via ipython
+matplotlib-inline==0.1.7
+    # via ipython
 nodeenv==1.8.0
     # via pre-commit
+parso==0.8.4
+    # via jedi
+pexpect==4.9.0
+    # via ipython
+pickleshare==0.7.5
+    # via ipython
 platformdirs==4.2.2
     # via virtualenv
 pre-commit==3.5.0
     # via -r requirements.in
+prompt-toolkit==3.0.43
+    # via ipython
 psycopg2-binary==2.9.9
     # via -r requirements.in
+ptyprocess==0.7.0
+    # via pexpect
+pure-eval==0.2.2
+    # via stack-data
+pygments==2.18.0
+    # via ipython
 python-decouple==3.8
     # via -r requirements.in
 pyyaml==6.0.1
@@ -54,17 +85,29 @@ requests==2.32.2
 shortuuid==1.0.13
     # via django-shortuuidfield
 six==1.16.0
-    # via django-shortuuidfield
+    # via
+    #   asttokens
+    #   django-shortuuidfield
 sqlparse==0.5.0
     # via django
+stack-data==0.6.3
+    # via ipython
+traitlets==5.14.3
+    # via
+    #   ipython
+    #   matplotlib-inline
 typing-extensions==4.11.0
-    # via asgiref
+    # via
+    #   asgiref
+    #   ipython
 urllib3==2.2.1
     # via requests
 uwsgi==2.0.25.1
     # via -r requirements.in
 virtualenv==20.26.2
     # via pre-commit
+wcwidth==0.2.13
+    # via prompt-toolkit
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

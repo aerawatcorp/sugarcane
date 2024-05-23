@@ -8,3 +8,5 @@ uwsgi==2.0.25.1
 requests==2.32.2
 humanize==4.9.0
 redis==5.0.4
+django-extensions==3.2.3
+ipython==8.12.3

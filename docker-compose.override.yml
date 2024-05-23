@@ -4,4 +4,6 @@ services:
   sugarcane:
     command: "python3 sugarcane/main.py"
   sugarcanedj:
+    tty: true
+    stdin_open: true
     command: "python3 sugardj/manage.py runserver 0.0.0.0:8000"
