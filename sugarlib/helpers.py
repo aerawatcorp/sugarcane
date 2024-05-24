@@ -1,25 +1,11 @@
 import json
 import random
 import sys
-from datetime import datetime, timedelta
-
 import humanize
 import redis
 import requests
-from flask import make_response
 
-from sugarlib.constants import (DATA_NODES, EXPIRED_PREFIX, MASTER_KEY,
-                                MASTER_TTL, NODES_TTL, R_PREFIX)
-
-
-def json_response(data, is_json=False, headers={}, etag=None):
-    response = make_response(json.dumps(data, indent=4) if is_json is False else data)
-    response.headers["Content-Type"] = "application/json"
-    for k, v in headers.items():
-        response.headers[k] = v
-    if etag:
-        response.headers["Etag"] = etag
-    return response
+from datetime import datetime, timedelta
 
 
 def humanize_delta(date_value):

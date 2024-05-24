@@ -2,6 +2,8 @@ version: "3.8"
 
 services:
   sugarcane:
-    command: ["uwsgi", "--http", "0.0.0.0:8000", "--master", "-p", "4", "-w", "sugarcane.app:app"]
-  demo:
-    command: ["uwsgi", "--http", "0.0.0.0:5000", "--master", "-p", "4", "-w", "demo_application.app:app"]
+    command: "python3 sugarcane/main.py"
+  sugarcanedj:
+    tty: true
+    stdin_open: true
+    command: "python3 sugardj/manage.py runserver 0.0.0.0:8000"

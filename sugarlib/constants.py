@@ -1,12 +1,19 @@
 import os
-from decouple import config
+
+from decouple import AutoConfig
+
+config = AutoConfig(search_path='/app')
 
 CONTENT_ROOT = os.path.join(os.path.dirname(__file__), "../content/datadir/")
-DATA_NODES = config("DATA_NODES", cast=lambda v: [x.strip() for x in v.split(",")])
+MASTER_SCHEMA_PATH = os.path.join(CONTENT_ROOT, f"master.json")
 
 REDIS_HOST_CANE = config("REDIS_HOST_CANE")
 REDIS_PORT_CANE = config("REDIS_PORT_CANE")
 REDIS_DB_CANE = config("REDIS_DB_CANE")
+
+CANE_SERVER_LISTEN_HOST = config("CANE_SERVER_LISTEN_HOST")
+CANE_SERVER_LISTEN_PORT = config("CANE_SERVER_LISTEN_PORT", cast=int)
+
 
 REDIS_HOST_DEMO = config("REDIS_HOST_DEMO")
 REDIS_PORT_DEMO = config("REDIS_PORT_DEMO")
@@ -20,6 +27,8 @@ EXPIRED_TTL = config("EXPIRED_TTL", cast=int)
 MASTER_TTL = config("MASTER_TTL", cast=int)
 NODES_TTL = config("NODES_TTL", cast=int)
 
+MASTER_API_URL = config("MASTER_API_URL", default="")
+NODE_API_URL = config("NODE_API_URL", default="")
 
 CANE_SERVER_LISTEN_HOST = config("CANE_SERVER_LISTEN_HOST")
 CANE_SERVER_LISTEN_PORT = config("CANE_SERVER_LISTEN_PORT", cast=int)
