@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 
 from sachet.models import Catalog, Store
+from sachet.tasks import initiate_node_rebuild
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class CatalogViewset(ModelViewSet):
             instance: Catalog = self.get_object()
             store: Store = instance.get_lastest_store()
             data, _ = store.get_node_schema()
+            initiate_node_rebuild.delay(instance.id)
             return Response(data)
         except Store.DoesNotExist as exp:
             logging.error(f"[NODE API] Store not found {exp} {traceback.format_exc()}")
