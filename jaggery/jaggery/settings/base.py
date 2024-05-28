@@ -150,3 +150,6 @@ JAZZMIN_SETTINGS = {
     "site_header": "Sugarcane",
     "site_brand": "Sugarcane",
 }
+
+from sugarlib.constants import REDIS_HOST_CANE, REDIS_PORT_CANE
+CELERY_BROKER_URL = f"redis://{REDIS_HOST_CANE}:{REDIS_PORT_CANE}//"
