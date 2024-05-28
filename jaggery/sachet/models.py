@@ -36,6 +36,61 @@ class Catalog(BaseModel):
 	def __str__(self):
 		return self.name
 
+	def get_node_url(self):
+		"""The url from which the current node data is retrieved"""
+		# TODO - need to use slug in node name
+		return NODE_API_URL.format(node_name=self.idx, version=self.latest_version)
+
+	def get_lastest_store(self):
+		"""Get latest store with version"""
+		store = self.stores.filter(version=self.latest_version, is_active=True).last()
+		return store
+
+	@classmethod
+	def build_master_schema(cls):
+		"""Build master schema"""
+		now = get_local_time()
+
+		cache_data = {
+			"expires_on": str(now + timedelta(seconds=MASTER_TTL)),
+			"updated_on": str(now),
+			"scheme": "master",
+			"nodes": {}
+		}
+		
+		# Get the distinct catalogs list
+		expires_on_subquery = Store.objects.filter(
+			catalog=OuterRef('pk'), 
+			version=OuterRef('latest_version')
+		).values('expires_on')[:1]
+
+		# Annotate the Catalog queryset with the expires_on field from the subquery,
+		# and use Coalesce to handle None values
+		catalogs = Catalog.objects.filter(is_obsolete=False).annotate(
+			expires_on=Coalesce(Subquery(expires_on_subquery), Value(None))
+		).order_by("-id")
+
+		nodes = {}
+		for i in catalogs:
+			node_data = {
+				"expires_on": str(i.expires_on),
+				"updated_on": str(i.updated_on),
+				"url": i.get_node_url(),
+				"version": i.latest_version,
+				"is_live": i.is_live,
+			}
+			nodes.update({i.name: node_data})
+		
+		cache_data["nodes"] = nodes
+
+		return cache_data
+
+	@classmethod
+	def write_master_schema_to_cache(cls):
+		"""Write master schema in cache"""
+		cache_data = cls.build_master_schema()
+		r_set(r1, MASTER_KEY, cache_data, ttl=MASTER_TTL)
+
 
 class Store(BaseModel):
 	"""Store information related to cataolog store"""
@@ -83,6 +138,9 @@ class Store(BaseModel):
 		"""Build node schema"""
 		now = get_local_time()
 		expires_on = now + timedelta(seconds=NODES_TTL)
+
+		if expires_on > self.expires_on:
+			expires_on = self.expires_on
 
 		return {
 			"scheme": "node",
@@ -134,5 +192,5 @@ class Store(BaseModel):
 		if self.expires_on > now:
 			logger.info(f"[STORE] Get db cache data for idx - {self.idx}")
 			self.write_to_redis()
-			raise DatabaseCacheExpired("Invalid 3rd level cache")
+			raise DatabaseCacheExpired("Invalid database level cache")
 	
