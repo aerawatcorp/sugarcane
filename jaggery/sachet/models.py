@@ -13,7 +13,7 @@ from sugarlib.constants import CONTENT_ROOT, MASTER_TTL, NODES_TTL, NODE_API_URL
 
 from sachet.exceptions import WriteToCacheError, DatabaseCacheExpired, FileCacheExpired, RedisCacheExpired
 from helpers.models import BaseModel
-from helpers.misc import get_local_time
+from helpers.misc import get_local_time, get_local_isotime
 
 
 logger = logging.getLogger(__name__)
@@ -47,16 +47,18 @@ class Catalog(BaseModel):
 		return store
 
 	@classmethod
-	def build_master_schema(cls):
+	def get_master_schema(cls, verbose: bool=True):
 		"""Build master schema"""
 		now = get_local_time()
+		expires_on = str(now + timedelta(seconds=MASTER_TTL))
 
 		cache_data = {
-			"expires_on": str(now + timedelta(seconds=MASTER_TTL)),
-			"updated_on": str(now),
+			"expires_on": expires_on,
 			"scheme": "master",
 			"nodes": {}
 		}
+		if not verbose:
+			cache_data.update({"updated_on": str(now)})
 		
 		# Get the distinct catalogs list
 		expires_on_subquery = Store.objects.filter(
@@ -74,22 +76,31 @@ class Catalog(BaseModel):
 		for i in catalogs:
 			node_data = {
 				"expires_on": str(i.expires_on),
-				"updated_on": str(i.updated_on),
 				"url": i.get_node_url(),
-				"version": i.latest_version,
 				"is_live": i.is_live,
 			}
+			if not verbose:
+				node_data.update({
+					"version": i.latest_version,
+					"updated_on": str(i.updated_on),
+				})
+
 			nodes.update({i.name: node_data})
 		
 		cache_data["nodes"] = nodes
 
-		return cache_data
+		return cache_data, expires_on
 
 	@classmethod
 	def write_master_schema_to_cache(cls):
 		"""Write master schema in cache"""
-		cache_data = cls.build_master_schema()
+		cache_data = cls.get_master_schema()
 		r_set(r1, MASTER_KEY, cache_data, ttl=MASTER_TTL)
+
+	@classmethod
+	def get_master_schema_from_cache(cls):
+		"""Write master schema in cache"""
+		return r_get(r1, MASTER_KEY)
 
 
 class Store(BaseModel):
@@ -134,7 +145,7 @@ class Store(BaseModel):
 			logger.error(f"[STORE] Redis cache validation error - {self.get_cache_redis_key()} idx - {self.idx}")
 			raise RedisCacheExpired("Invalid redis cache")
 
-	def build_node_schema(self):
+	def get_node_schema(self):
 		"""Build node schema"""
 		now = get_local_time()
 		expires_on = now + timedelta(seconds=NODES_TTL)
@@ -142,14 +153,15 @@ class Store(BaseModel):
 		if expires_on > self.expires_on:
 			expires_on = self.expires_on
 
-		return {
+		data = {
 			"scheme": "node",
 			"node": self.catalog.name,
 			"version": self.version,
-			"expires_on": str(expires_on),
-			"updated_on": str(self.updated_on),
+			"expires_on": str(get_local_isotime(expires_on)),
+			"updated_on": str(get_local_isotime(self.updated_on)),
 			"data": self.content
 		}
+		return data, expires_on
 	
 	def write_to_db(self):
 		"""Write to db"""
@@ -165,20 +177,13 @@ class Store(BaseModel):
 
 	def write_to_redis(self):
 		"""Write to redis as 3rd level cache"""
-		cache_data = self.build_node_schema()
+		cache_data = self.get_node_schema()
 		r_set(r1, self.get_cache_redis_key(), cache_data, ttl=self.catalog.ttl)
 	
 	def invalidate_cache(self):
 		"""Validate cache and write to cache"""
-		try:
-			self.validate_cache()
-		except DatabaseCacheExpired:
-			logger.info(f"[STORE] Initiate db write protocol for idx - {self.idx}")
-			self.write_to_db()
-			self.write_to_redis()
-
-		except RedisCacheExpired:
-			logger.info(f"[STORE] Initiate redis cache write protocol for idx - {self.idx}")
+		self.write_to_db()
+		self.write_to_redis()
 
 	def get_data(self):
 		"""Validate mulitple level cached data's expiry date"""
@@ -192,5 +197,8 @@ class Store(BaseModel):
 		if self.expires_on > now:
 			logger.info(f"[STORE] Get db cache data for idx - {self.idx}")
 			self.write_to_redis()
-			raise DatabaseCacheExpired("Invalid database level cache")
+			return self.get_node_schema()
+		else:
+			self.invalidate_cache()
+			return self.get_node_schema()
 	

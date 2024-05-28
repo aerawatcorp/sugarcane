@@ -51,3 +51,7 @@ class FileHandler:
 			json.dump(data, file)
 
 		return True
+
+
+def get_local_isotime(value):
+	return value.astimezone(timezone.get_current_timezone()).isoformat()
