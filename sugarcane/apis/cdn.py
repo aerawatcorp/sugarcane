@@ -1,6 +1,7 @@
 import os
 import json
 import pytz
+import requests
 
 from datetime import datetime
 from dateutil.parser import parse
@@ -9,7 +10,7 @@ from flask import Blueprint
 from flask import Blueprint, abort
 
 from sugarlib.constants import (
-    CONTENT_ROOT, EXPIRED_TTL, MASTER_KEY, MASTER_TTL, MASTER_SCHEMA_PATH
+    CONTENT_ROOT, EXPIRED_TTL, MASTER_KEY, MASTER_TTL, MASTER_JAGGERY_API_URL, NODE_JAGGERY_API_URL
 )
 from sugarcane.core.helpers import json_response
 from sugarlib.helpers import etag_master, etag_node
@@ -29,6 +30,7 @@ def master():
     cached_master, ttl = r_get(r1, MASTER_KEY)
     
     if ttl is not False:
+        # TODO - Add prints in logging instead
         print("Return data from cache")
         # Return cache HIT data
         return json_response(
@@ -40,24 +42,22 @@ def master():
             },
         )
 
-    # In case of cache MISS, retrieve the data from file cache
-    # Presume that the master is not cached
-    if os.path.exists(MASTER_SCHEMA_PATH):
-        print("Return data from file")
-        master_in_file = open(MASTER_SCHEMA_PATH)
-        master_in_file = json.load(master_in_file)
-
-        expires_on = master_in_file["expires_on"]
-        expires_on_datetime = parse(expires_on, fuzzy=True)
-        if expires_on_datetime < datetime.now(pytz.utc):
-            # TODO - Need to get master meta data incase of expiry ??
-            abort(404)
-
+    # In case of cache MISS, retrieve the data
+    if MASTER_JAGGERY_API_URL:
+        print("Retrieve and return data")
+        response = requests.get(MASTER_JAGGERY_API_URL)
+        if not response.ok:
+            print(response.content)
+            print("Could not fetch data")
+            abort(503)
+        
+        master_data = response.json()
+        
         # Set in memory cache in case of cache MISS
-        r_set(r1, MASTER_KEY, master_in_file, ttl=MASTER_TTL) 
-        etag = etag_master(master_in_file["updated_on"])
+        r_set(r1, MASTER_KEY, master_data, ttl=MASTER_TTL) 
+        etag = etag_master(master_data["updated_on"])
         r_master_etag(r1, etag)
-        return json_response(data=master_in_file, headers={"X-Cache": "MISS"}, etag=etag)
+        return json_response(data=master_data, headers={"X-Cache": "MISS"}, etag=etag)
     else:
         abort(503)
 
@@ -75,27 +75,26 @@ def node(version, node_name):
         # Return cache HIT data
         return json_response(node_data, headers={"X-Cache": "HIT"}, etag=etag)
     
-    # check if it was expired earlier
-    # TODO - Get new value and store or return expire ??
-    if r_was_expired(r1, versioned_key):
-        abort(404)
+    if NODE_JAGGERY_API_URL:
+        print("Retrieve and return data")
+        response = requests.get(NODE_JAGGERY_API_URL.format(node_name=node_name))
+        if not response.ok:
+            print(response.content)
+            print("Could not fetch data")
+            abort(503)
+        
+        node_data = response.json()
 
-    # see in the file (this can be replaced with a replaceable function not necessarily file based)
-    node_file = os.path.join(CONTENT_ROOT, "nodes/", node_name, f"{version}.json")
-
-    if os.path.exists(node_file):
-        node_data = open(node_file)
-        node_data = json.load(node_data)
         expires_on = node_data["expires_on"]
         expires_on_datetime = parse(expires_on, fuzzy=True)
 
         if expires_on_datetime < datetime.now(pytz.utc):
             # this was supposed to expire only
             r_log_expire(r1, versioned_key, EXPIRED_TTL)
-            abort(404)
+            abort(503)
         
         # remaining seconds
-        ttl_seconds = (expires_on_datetime - datetime.now()).seconds
+        ttl_seconds = (expires_on_datetime - datetime.now(pytz.utc)).seconds
         r_set(r1, versioned_key, node_data, ttl=ttl_seconds)
         return json_response(
             node_data,
@@ -103,4 +102,4 @@ def node(version, node_name):
             etag=etag,
         )
     else:
-        abort(404)
+        abort(503)

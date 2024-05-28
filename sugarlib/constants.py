@@ -30,6 +30,9 @@ NODES_TTL = config("NODES_TTL", cast=int)
 MASTER_API_URL = config("MASTER_API_URL", default="")
 NODE_API_URL = config("NODE_API_URL", default="")
 
+MASTER_JAGGERY_API_URL = config("MASTER_JAGGERY_API_URL", default="")
+NODE_JAGGERY_API_URL = config("NODE_JAGGERY_API_URL", default="")
+
 CANE_SERVER_LISTEN_HOST = config("CANE_SERVER_LISTEN_HOST")
 CANE_SERVER_LISTEN_PORT = config("CANE_SERVER_LISTEN_PORT", cast=int)
 
