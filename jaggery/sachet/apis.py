@@ -31,9 +31,11 @@ class CatalogViewset(ModelViewSet):
         try:
             instance: Catalog = self.get_object()
             store: Store = instance.get_lastest_store()
-            if store:
-                data, _ = store.get_node_schema()
-                return Response(data)
+            data, _ = store.get_node_schema()
+            return Response(data)
+        except Store.DoesNotExist as exp:
+            logging.error(f"[NODE API] Store not found {exp} {traceback.format_exc()}")
+            return  Response({"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as exp:
             logging.error(f"[NODE API] Retrieve error {exp} {traceback.format_exc()}")
             return  Response({"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST)

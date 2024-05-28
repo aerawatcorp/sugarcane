@@ -42,11 +42,11 @@ class CatalogAdmin(admin.ModelAdmin):
     def rebuild_node_schema(self, request, pk):
         catalog = Catalog.objects.get(pk=pk)
         store: Store = catalog.get_lastest_store()
-        if store:
+        try:
             store.invalidate_cache()
             messages.success(request, "Store schema rebuild completed")
-        else:
-            messages.error(request, "Store schema rebuild completed",)
+        except Store.DoesNotExist:
+            messages.error(request, "Store schema not found",)
         return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
     
 

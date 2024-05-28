@@ -41,10 +41,13 @@ class Catalog(BaseModel):
 		# TODO - need to use slug in node name
 		return NODE_API_URL.format(node_name=self.idx, version=self.latest_version)
 
-	def get_lastest_store(self):
+	def get_lastest_store(self) -> 'Store':
 		"""Get latest store with version"""
 		store = self.stores.filter(version=self.latest_version, is_active=True).last()
+		if not store:
+			raise Store.DoesNotExist
 		return store
+
 
 	@classmethod
 	def get_master_schema(cls, verbose: bool=True):
