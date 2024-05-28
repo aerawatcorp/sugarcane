@@ -17,10 +17,9 @@ class CatalogViewset(ModelViewSet):
 
     @action(methods=["GET"], detail=False, url_path="master-schema")
     def master_schema(self, request, *args, **kwargs):
-        """Retrieve master schema and also write in schema"""
+        """Retrieve master schema and also write in cache"""
         try:
-            Catalog.write_master_schema_to_cache()
-            data = Catalog.get_master_schema_from_cache()
+            data, _ = Catalog.get_master_schema()
             return  Response(data)
         except Exception as exp:
             logging.error(f"[MASTER API] Retrieve error {exp} {traceback.format_exc()}")
@@ -28,6 +27,7 @@ class CatalogViewset(ModelViewSet):
     
     @action(methods=["GET"], detail=True, url_path="node-data")
     def node_data(self, request, *args, **kwargs):
+        """Get node data and initiate write in cache"""
         try:
             instance: Catalog = self.get_object()
             store: Store = instance.get_lastest_store()

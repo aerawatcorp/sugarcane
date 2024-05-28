@@ -9,9 +9,9 @@ from sachet.models import Catalog, Store
 
 @admin.register(Catalog)
 class CatalogAdmin(admin.ModelAdmin):
-    list_display = ["name", "provider", "provider_url", "ttl", "updated_on", "action"]
-    list_filter = ["is_obsolete"]
-    search_fields = ["name", "provider"]
+    list_display = ["name", "provider", "provider_url", "ttl", "is_live", "latest_version", "updated_on", "action"]
+    list_filter = ["is_obsolete", "is_live"]
+    search_fields = ["name", "provider", "latest_version"]
 
     change_list_template = "admin/sachet/catalog_change_list.html"
 

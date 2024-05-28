@@ -30,7 +30,7 @@ class Catalog(BaseModel):
 	trigger_rule = models.JSONField(default=dict, blank=True)
 
 	ttl = models.IntegerField(default=100, help_text=_("Default time to live in seconds for the catalog stores"))
-	is_live = models.BooleanField(default=False)
+	is_live = models.BooleanField(default=False, help_text=_("If set to true, the client should directly initiate request ignoring the cache"))
 	latest_version = models.CharField(max_length=255)
 
 	def __str__(self):
@@ -55,10 +55,9 @@ class Catalog(BaseModel):
 		cache_data = {
 			"expires_on": expires_on,
 			"scheme": "master",
+			"updated_on": str(now),
 			"nodes": {}
 		}
-		if not verbose:
-			cache_data.update({"updated_on": str(now)})
 		
 		# Get the distinct catalogs list
 		expires_on_subquery = Store.objects.filter(
