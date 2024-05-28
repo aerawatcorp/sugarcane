@@ -2,8 +2,10 @@ version: "3.8"
 
 services:
   sugarcane:
+    restart: always
     command: "python3 sugarcane/main.py"
-  sugarcanedj:
+  jaggery:
+    restart: always
     tty: true
     stdin_open: true
-    command: "python3 sugardj/manage.py runserver 0.0.0.0:8000"
+    command: "python3 jaggery/manage.py runserver 0.0.0.0:8000"

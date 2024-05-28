@@ -15,18 +15,18 @@ services:
     env_file:
       - .env
 
-  sugarcanedj:
-    image: mucize-sugardj
-    container_name: ${PROJECT_NAME}-dj
+  jaggery:
+    image: mucize-jaggery
+    container_name: ${PROJECT_NAME}-jaggery
     build:
-      context: ./sugardj
+      context: ./jaggery
       dockerfile: Dockerfile
     command: ["uwsgi", "--http", "0.0.0.0:8000", "--master", "-p", "4", "-w", "config.wsgi:application"]
     env_file:
       - .env
     volumes:
       - ./sugarlib:/app/sugarlib
-      - ./sugardj:/app/sugardj
+      - ./jaggery:/app/jaggery
       - ./content:/app/content
       - .env:/app/.env
     ports:
