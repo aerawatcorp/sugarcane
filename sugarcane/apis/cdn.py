@@ -1,7 +1,10 @@
 import os
 import json
+import pytz
 
 from datetime import datetime
+from dateutil.parser import parse
+
 from flask import Blueprint
 from flask import Blueprint, abort
 
@@ -26,6 +29,7 @@ def master():
     cached_master, ttl = r_get(r1, MASTER_KEY)
     
     if ttl is not False:
+        print("Return data from cache")
         # Return cache HIT data
         return json_response(
             cached_master,
@@ -39,13 +43,13 @@ def master():
     # In case of cache MISS, retrieve the data from file cache
     # Presume that the master is not cached
     if os.path.exists(MASTER_SCHEMA_PATH):
+        print("Return data from file")
         master_in_file = open(MASTER_SCHEMA_PATH)
         master_in_file = json.load(master_in_file)
 
         expires_on = master_in_file["expires_on"]
-        expires_on_datetime = datetime.strptime(expires_on, "%Y-%m-%d %H:%M:%S.%f")
-
-        if expires_on_datetime < datetime.now():
+        expires_on_datetime = parse(expires_on, fuzzy=True)
+        if expires_on_datetime < datetime.now(pytz.utc):
             # TODO - Need to get master meta data incase of expiry ??
             abort(404)
 
@@ -55,7 +59,7 @@ def master():
         r_master_etag(r1, etag)
         return json_response(data=master_in_file, headers={"X-Cache": "MISS"}, etag=etag)
     else:
-        abort(418)
+        abort(503)
 
 
 @blueprint.route("/get/<version>/<node_name>", methods=["GET"])
@@ -83,9 +87,9 @@ def node(version, node_name):
         node_data = open(node_file)
         node_data = json.load(node_data)
         expires_on = node_data["expires_on"]
-        expires_on_datetime = datetime.strptime(expires_on, "%Y-%m-%d %H:%M:%S.%f")
+        expires_on_datetime = parse(expires_on, fuzzy=True)
 
-        if expires_on_datetime < datetime.now():
+        if expires_on_datetime < datetime.now(pytz.utc):
             # this was supposed to expire only
             r_log_expire(r1, versioned_key, EXPIRED_TTL)
             abort(404)

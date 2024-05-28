@@ -44,7 +44,11 @@ platformdirs==4.2.2
     # via virtualenv
 pre-commit==3.5.0
     # via -r requirements.in
+python-dateutil==2.9.0.post0
+    # via -r requirements.in
 python-decouple==3.8
+    # via -r requirements.in
+pytz==2024.1
     # via -r requirements.in
 pyyaml==6.0.1
     # via pre-commit
@@ -52,6 +56,8 @@ redis==5.0.4
     # via -r requirements.in
 requests==2.31.0
     # via -r requirements.in
+six==1.16.0
+    # via python-dateutil
 urllib3==2.2.1
     # via requests
 virtualenv==20.26.2
