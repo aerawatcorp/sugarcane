@@ -94,7 +94,7 @@ class Catalog(BaseModel):
 	@classmethod
 	def write_master_schema_to_cache(cls):
 		"""Write master schema in cache"""
-		cache_data = cls.get_master_schema()
+		cache_data, _ = cls.get_master_schema()
 		r_set(r1, MASTER_KEY, cache_data, ttl=MASTER_TTL)
 
 	@classmethod
@@ -177,11 +177,11 @@ class Store(BaseModel):
 
 	def write_to_redis(self):
 		"""Write to redis as 3rd level cache"""
-		cache_data = self.get_node_schema()
+		cache_data, _ = self.get_node_schema()
 		r_set(r1, self.get_cache_redis_key(), cache_data, ttl=self.catalog.ttl)
 	
 	def invalidate_cache(self):
-		"""Validate cache and write to cache"""
+		"""Invalidate and write new cache content"""
 		self.write_to_db()
 		self.write_to_redis()
 
@@ -197,8 +197,8 @@ class Store(BaseModel):
 		if self.expires_on > now:
 			logger.info(f"[STORE] Get db cache data for idx - {self.idx}")
 			self.write_to_redis()
-			return self.get_node_schema()
+			return self.get_node_schema()[0]
 		else:
 			self.invalidate_cache()
-			return self.get_node_schema()
+			return self.get_node_schema()[0]
 	
