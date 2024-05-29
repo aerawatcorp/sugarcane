@@ -24,3 +24,8 @@ class FileCacheExpired(CaneException):
 class RedisCacheExpired(CaneException):
     def __init__(self, message, error_key="cache_expired"):
         super().__init__(message, error_key)
+
+
+class CacheBuildAlreadyInitiated(CaneException):
+    def __init__(self, message, error_key="cache_build_initiated"):
+        super().__init__(message, error_key)

@@ -1,17 +1,19 @@
 import requests
 import logging
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils.translation import gettext_lazy as _
-from django.db import models
+from django.db import models, transaction
 from django.db.models import OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce
+from django.contrib.postgres.fields import ArrayField
+from django.utils.text import slugify
 
 from sugarlib.redis_client import r1_cane as r1
-from sugarlib.redis_helpers import r_set, r_get
-from sugarlib.constants import CONTENT_ROOT, MASTER_TTL, NODES_TTL, NODE_API_URL, MASTER_SCHEMA_PATH, MASTER_KEY
+from sugarlib.redis_helpers import r_set, r_get, r_delete
+from sugarlib.constants import MASTER_TTL, NODES_TTL, NODE_API_URL, MASTER_KEY, REQUEST_TIMEOUT
 
-from sachet.exceptions import WriteToCacheError, DatabaseCacheExpired, FileCacheExpired, RedisCacheExpired
+from sachet.exceptions import WriteToCacheError, DatabaseCacheExpired, RedisCacheExpired, CacheBuildAlreadyInitiated
 from helpers.models import BaseModel
 from helpers.misc import get_local_time, get_local_isotime
 
@@ -22,9 +24,12 @@ logger = logging.getLogger(__name__)
 class Catalog(BaseModel):
 	"""Store information related to catalog"""
 	name = models.CharField(max_length=255, db_index=True, unique=True)
+	slug = models.SlugField(max_length=255, unique=True, blank=True)
 	namespace = models.CharField(max_length=255, null=True, blank=True)
+	
 	provider = models.CharField(max_length=255, db_index=True)
 	provider_url = models.URLField()
+	sub_catalogs = ArrayField(models.CharField(max_length=255, blank=True), null=True, blank=True)
 
 	cache_rule = models.JSONField(default=dict, blank=True)
 	trigger_rule = models.JSONField(default=dict, blank=True)
@@ -32,22 +37,65 @@ class Catalog(BaseModel):
 	ttl = models.IntegerField(default=100, help_text=_("Default time to live in seconds for the catalog stores"))
 	is_live = models.BooleanField(default=False, help_text=_("If set to true, the client should directly initiate request ignoring the cache"))
 	latest_version = models.CharField(max_length=255)
-
-	def __str__(self):
+	
+	def __str__(self) -> str:
 		return self.name
 
-	def get_node_url(self):
-		"""The url from which the current node data is retrieved"""
-		# TODO - need to use slug in node name
-		return NODE_API_URL.format(node_name=self.idx, version=self.latest_version)
+	def _slugify(self) -> str:
+		if not self.slug:
+			self.slug = slugify(self.name)
+		return self.slug
 
-	def get_lastest_store(self) -> 'Store':
+	def save(self, *args, **kwargs):
+		self._slugify()
+		return super().save(*args, **kwargs)
+
+	def get_node_url(self) -> str:
+		"""The url from which the current node data is retrieved"""
+		return NODE_API_URL.format(node_name=self.slug, version=self.latest_version)
+
+	def get_lastest_store(self, sub_catalog: str) -> 'Store':
 		"""Get latest store with version"""
-		store = self.stores.filter(version=self.latest_version, is_active=True).last()
+		store = self.stores.filter(version=self.latest_version, is_active=True, sub_catalog=sub_catalog).last()
 		if not store:
 			raise Store.DoesNotExist
 		return store
 
+	@classmethod
+	def can_build_cache(self, key: str) -> bool:
+		"""Check if cache build can be initiated"""
+		_, ttl = r_get(r1, key)
+		if ttl is False:
+			return True
+		return False
+
+	def start_build(self, sub_catalog: str):
+		"""Start the build by initiating the cache"""
+		if Catalog.can_build_cache(f"catalog-status:{self.id}:{sub_catalog}") is False:
+			raise CacheBuildAlreadyInitiated(f"Cache build has already been iniiated for - {self.id} sub catalog - {sub_catalog}")
+		
+		# Set the key in cache with ttl to match request timeout
+		r_set(r1, f"catalog-status:{self.id}:{sub_catalog}", True, ttl=REQUEST_TIMEOUT)
+	
+	def end_build(self, sub_catalog: str):
+		"""Remove the key from cache"""
+		r_delete(r1, f"catalog-status:{self.id}:{sub_catalog}")
+
+	@transaction.atomic
+	def build_new_store(self, sub_catalog: str):
+		"""Build new version of the store"""
+		self.start_build(sub_catalog)
+
+		now = get_local_time()
+		expires_on = now + timedelta(seconds=self.ttl)
+		version = int(now.timestamp())
+		Store.new(self, expires_on, version)
+		obj = Catalog.objects.select_for_update().get(pk=self.pk)
+		obj.latest_version = version
+		obj.save(update_fields=["updated_on", "latest_version"])
+		
+		self.end_build(sub_catalog)
+		return obj
 
 	@classmethod
 	def get_master_schema(cls, verbose: bool=True):
@@ -64,7 +112,7 @@ class Catalog(BaseModel):
 		
 		# Get the distinct catalogs list
 		expires_on_subquery = Store.objects.filter(
-			catalog=OuterRef('pk'), 
+			catalog=OuterRef('pk'),
 			version=OuterRef('latest_version')
 		).values('expires_on')[:1]
 
@@ -80,11 +128,12 @@ class Catalog(BaseModel):
 				"expires_on": str(i.expires_on),
 				"url": i.get_node_url(),
 				"is_live": i.is_live,
+				"sub_catalogs": i.sub_catalogs
 			}
 			if not verbose:
 				node_data.update({
 					"version": i.latest_version,
-					"updated_on": str(i.updated_on),
+					"updated_on": str(i.updated_on)
 				})
 
 			nodes.update({i.name: node_data})
@@ -108,6 +157,7 @@ class Catalog(BaseModel):
 class Store(BaseModel):
 	"""Store information related to cataolog store"""
 	catalog = models.ForeignKey(Catalog, on_delete=models.PROTECT, related_name="stores")
+	sub_catalog = models.CharField(max_length=255, null=True, blank=True)
 	url = models.URLField(help_text=_("URL to get the data from"))
 	content = models.JSONField(default=dict, blank=True)
 	version = models.CharField(help_text=_("Version of the retrieved data"))
@@ -117,14 +167,26 @@ class Store(BaseModel):
 	remarks = models.CharField(max_length=255, null=True, blank=True)
 
 	class Meta:
-		unique_together = ["catalog", "version"]
-		
+		unique_together = ["catalog", "sub_catalog", "version"]
+	
+	@classmethod
+	@transaction.atomic
+	def new(cls, catalog: Catalog, expires_on: datetime, version: str):
+		"""
+		Create a new store for the catalog.
+		Expecting the store to be the latest version for the catalog.
+		"""
+		obj = cls.objects.create(catalog=catalog, url=catalog.url, version=version, expires_on=expires_on, is_active=True, content={})
+		obj.write_to_db()
+		obj.write_to_redis()
+		return obj
+
 	def get_cache_redis_key(self):
 		return f"{self.catalog.name}-{self.version}"
 
 	def request_data(self) -> dict:
 		"""Get new data from request url"""
-		response = requests.get(self.url)
+		response = requests.get(self.url, timeout=REQUEST_TIMEOUT)
 		if not response.ok:
 			logger.error(f"[STORE] Fetch data error idx - {self.idx}")
 			raise WriteToCacheError(f"[STORE CACHE] Error response from ({self.url}) for store idx - {self.idx}")
