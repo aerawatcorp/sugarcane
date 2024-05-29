@@ -25,12 +25,14 @@ class DatabaseStore(BaseStore):
             id = Column(Integer, primary_key=True)
             payload = Column(String)
 
+        self.DataEntry = DataEntry
+
         # Initialize database (create table if not exists)
         Base.metadata.create_all(self.engine)
 
     def store(self, data):
         # Create new data entry
-        new_entry = DataEntry(payload=data)
+        new_entry = self.DataEntry(payload=data)
 
         # Add entry to database session
         session = self.SessionLocal()
@@ -53,7 +55,7 @@ class DatabaseStore(BaseStore):
         # Get all data entries from database
         session = self.SessionLocal()
         try:
-            entries = session.query(DataEntry).all()
+            entries = session.query(self.DataEntry).all()
             return [entry.payload for entry in entries]
         except Exception as e:
             # Handle database errors

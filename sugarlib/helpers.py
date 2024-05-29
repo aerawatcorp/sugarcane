@@ -6,6 +6,7 @@ import redis
 import requests
 
 from datetime import datetime, timedelta
+from sugarlib.redis_helpers import r_master_etag
 
 
 def humanize_delta(date_value):

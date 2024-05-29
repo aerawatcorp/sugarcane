@@ -2,7 +2,7 @@ import pika
 from stores import BaseStore
 
 """
-TODO: 
+TODO:
 This store is an example of how to store data in RabbitMQ.
 """
 
