@@ -23,7 +23,7 @@ def initiate_node_rebuild(catalog_id: int, sub_catalog: str):
         f"[NODE REBUILD INITIATED] Catalog ({catalog.name}:{sub_catalog}) node rebuild initiated"
     )
     try:
-        catalog.build_new_store(sub_catalog)
+        catalog.fetch_sub_catalog_content(sub_catalog)
     except CacheBuildAlreadyInitiated:
         logging.info(
             f"[NODE REBUILD ERROR] Catalog ({catalog.name}:{sub_catalog}) node rebuild already initaited"
