@@ -6,6 +6,8 @@
 #
 async-timeout==4.0.3
     # via redis
+black==24.4.2
+    # via -r requirements.in
 blinker==1.8.2
     # via flask
 certifi==2024.2.2
@@ -15,11 +17,15 @@ cfgv==3.4.0
 charset-normalizer==3.3.2
     # via requests
 click==8.1.7
-    # via flask
+    # via
+    #   black
+    #   flask
 distlib==0.3.8
     # via virtualenv
 filelock==3.14.0
     # via virtualenv
+flake8==7.0.0
+    # via -r requirements.in
 flask==3.0.3
     # via -r requirements.in
 humanize==4.9.0
@@ -38,12 +44,26 @@ markupsafe==2.1.5
     # via
     #   jinja2
     #   werkzeug
+mccabe==0.7.0
+    # via flake8
+mypy-extensions==1.0.0
+    # via black
 nodeenv==1.8.0
     # via pre-commit
+packaging==24.0
+    # via black
+pathspec==0.12.1
+    # via black
 platformdirs==4.2.2
-    # via virtualenv
+    # via
+    #   black
+    #   virtualenv
 pre-commit==3.5.0
     # via -r requirements.in
+pycodestyle==2.11.1
+    # via flake8
+pyflakes==3.2.0
+    # via flake8
 python-dateutil==2.9.0.post0
     # via -r requirements.in
 python-decouple==3.8
@@ -58,6 +78,10 @@ requests==2.31.0
     # via -r requirements.in
 six==1.16.0
     # via python-dateutil
+tomli==2.0.1
+    # via black
+typing-extensions==4.12.0
+    # via black
 urllib3==2.2.1
     # via requests
 virtualenv==20.26.2

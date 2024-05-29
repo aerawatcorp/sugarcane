@@ -1,7 +1,7 @@
 from flask import Flask
 from decouple import AutoConfig
 
-config = AutoConfig(search_path='/app')
+config = AutoConfig(search_path="/app")
 
 flask_app = Flask(__name__)
 flask_app.config.from_object("core.settings")
@@ -13,7 +13,7 @@ def routes_initialize():
 
     for bp in blueprints:
         flask_app.register_blueprint(bp[0], url_prefix=bp[1])
-    
+
     # if config("DEBUG", cast=bool) or True:
     #     from flask_swagger_ui import get_swaggerui_blueprint
 
