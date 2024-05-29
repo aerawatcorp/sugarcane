@@ -62,7 +62,7 @@ def master():
         abort(503)
 
 
-@blueprint.route("/get/<version>/<node_name>", methods=["GET"])
+@blueprint.route("/r/<version>/<node_name>", methods=["GET"])
 def node(version, node_name):
     """Get nodes data"""
     versioned_key = f"{node_name}:{version}"
