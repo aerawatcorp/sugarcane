@@ -22,6 +22,8 @@ backports-zoneinfo[tzdata]==0.2.1
     #   kombu
 billiard==4.2.0
     # via celery
+black==24.4.2
+    # via -r requirements.in
 celery==5.4.0
     # via -r requirements.in
 certifi==2024.2.2
@@ -32,6 +34,7 @@ charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via
+    #   black
     #   celery
     #   click-didyoumean
     #   click-plugins
@@ -65,6 +68,8 @@ executing==2.0.1
     # via stack-data
 filelock==3.14.0
     # via virtualenv
+flake8==7.0.0
+    # via -r requirements.in
 humanize==4.9.0
     # via -r requirements.in
 identify==2.5.36
@@ -79,16 +84,26 @@ kombu==5.3.7
     # via celery
 matplotlib-inline==0.1.7
     # via ipython
+mccabe==0.7.0
+    # via flake8
+mypy-extensions==1.0.0
+    # via black
 nodeenv==1.8.0
     # via pre-commit
+packaging==24.0
+    # via black
 parso==0.8.4
     # via jedi
+pathspec==0.12.1
+    # via black
 pexpect==4.9.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
 platformdirs==4.2.2
-    # via virtualenv
+    # via
+    #   black
+    #   virtualenv
 pre-commit==3.5.0
     # via -r requirements.in
 prompt-toolkit==3.0.43
@@ -101,6 +116,10 @@ ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.2
     # via stack-data
+pycodestyle==2.11.1
+    # via flake8
+pyflakes==3.2.0
+    # via flake8
 pygments==2.18.0
     # via ipython
 python-dateutil==2.9.0.post0
@@ -124,6 +143,8 @@ sqlparse==0.5.0
     # via django
 stack-data==0.6.3
     # via ipython
+tomli==2.0.1
+    # via black
 traitlets==5.14.3
     # via
     #   ipython
@@ -131,6 +152,7 @@ traitlets==5.14.3
 typing-extensions==4.11.0
     # via
     #   asgiref
+    #   black
     #   ipython
     #   kombu
 tzdata==2024.1

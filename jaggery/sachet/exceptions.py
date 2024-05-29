@@ -29,3 +29,8 @@ class RedisCacheExpired(CaneException):
 class CacheBuildAlreadyInitiated(CaneException):
     def __init__(self, message, error_key="cache_build_initiated"):
         super().__init__(message, error_key)
+
+
+class InvalidSubCatalogException(CaneException):
+    def __init__(self, message, error_key="invalid_sub_category"):
+        super().__init__(message, error_key)
