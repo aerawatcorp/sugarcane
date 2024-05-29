@@ -8,6 +8,7 @@ from dateutil.parser import parse
 
 from flask import Blueprint
 from flask import Blueprint, abort
+from flask import request
 
 from sugarlib.constants import (
     CONTENT_ROOT, EXPIRED_TTL, MASTER_KEY, MASTER_TTL, MASTER_JAGGERY_API_URL, NODE_JAGGERY_API_URL
@@ -77,7 +78,7 @@ def node(version, node_name):
     
     if NODE_JAGGERY_API_URL:
         print("Retrieve and return data")
-        response = requests.get(NODE_JAGGERY_API_URL.format(node_name=node_name))
+        response = requests.get(NODE_JAGGERY_API_URL.format(node_name=node_name), params=request.args)
         if not response.ok:
             print(response.content)
             print("Could not fetch data")
