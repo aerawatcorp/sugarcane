@@ -1,5 +1,4 @@
 from flask import Blueprint
-from flask import Blueprint
 
 from sugarcane.core.helpers import json_response
 
@@ -15,6 +14,6 @@ def home():
             "apis": {
                 "master": "/cdn/master",
                 "nodes": "/cdn/get/<version>/<node_name>",
-            }
+            },
         }
     )

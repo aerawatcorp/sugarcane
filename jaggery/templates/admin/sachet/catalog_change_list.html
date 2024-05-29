@@ -1,0 +1,10 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+{{ block.super }}
+<div class="object-tools">
+    {% for button in custom_buttons %}
+        <a href="{{ button.url }}" class="btn btn-info float-right">{{ button.name }}</a>
+    {% endfor %}
+</div>
+{% endblock %}

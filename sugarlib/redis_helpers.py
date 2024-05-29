@@ -46,6 +46,11 @@ def r_set(conn, key, value, ttl=None):
         conn.expire(_key, ttl)
 
 
+def r_delete(conn, key):
+    _key = f"{R_PREFIX}:{key}"
+    conn.delete(_key)
+
+
 def r_master_etag(conn, value=None):
     if value:
         r_set(conn, f"{MASTER_KEY}:ETAG", value, ttl=None)
