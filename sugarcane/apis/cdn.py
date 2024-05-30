@@ -3,13 +3,14 @@ import requests
 
 from datetime import datetime
 from dateutil.parser import parse
-
 from flask import Blueprint, abort
 from flask import request
+from urllib.parse import urlencode
 
 from sugarlib.constants import (
-    EXPIRED_TTL,
+    NODES_TTL,
     MASTER_KEY,
+    MASTER_KEY_VERBOSED,
     MASTER_TTL,
     MASTER_JAGGERY_API_URL,
     NODE_JAGGERY_API_URL,
@@ -32,7 +33,7 @@ blueprint = Blueprint("cdn", __name__)
 def master():
     """Get nodes meta data"""
     # Retrieve data from in memory cache
-    cached_master, ttl = r_get(r1, MASTER_KEY)
+    cached_master, ttl = r_get(r1, MASTER_KEY_VERBOSED)
 
     if ttl is not False:
         # TODO - Add prints in logging instead
@@ -60,6 +61,13 @@ def master():
 
         # Set in memory cache in case of cache MISS
         r_set(r1, MASTER_KEY, master_data, ttl=MASTER_TTL)
+
+        for _, v in (master_data.get("nodes") or {}).items()    :
+            v.pop("version")
+            v.pop("updated_on")
+
+        r_set(r1, MASTER_KEY_VERBOSED, master_data, ttl=MASTER_TTL)
+        
         etag = etag_master(master_data["updated_on"])
         r_master_etag(r1, etag)
         return json_response(data=master_data, headers={"X-Cache": "MISS"}, etag=etag)
@@ -70,7 +78,10 @@ def master():
 @blueprint.route("/r/<version>/<node_name>", methods=["GET"])
 def node(version, node_name):
     """Get nodes data"""
-    versioned_key = f"{node_name}:{version}"
+    args_dict = request.args.to_dict()
+    sub_catalog = urlencode(args_dict) if args_dict else "root"
+    versioned_key = f"{node_name}-{sub_catalog}:{version}"
+    verbosed_versioned_key = f"{node_name}-{sub_catalog}-v:{version}"
     etag = etag_node(node_name, version)
 
     # Retrieve data from in memory cache
@@ -91,18 +102,15 @@ def node(version, node_name):
             abort(503)
 
         node_data = response.json()
-
+        
         expires_on = node_data["expires_on"]
         expires_on_datetime = parse(expires_on, fuzzy=True)
 
-        if expires_on_datetime < datetime.now(pytz.utc):
-            # this was supposed to expire only
-            r_log_expire(r1, versioned_key, EXPIRED_TTL)
-            abort(503)
-
-        # remaining seconds
         ttl_seconds = (expires_on_datetime - datetime.now(pytz.utc)).seconds
+
+        # Set in memory cache in case of cache MISS
         r_set(r1, versioned_key, node_data, ttl=ttl_seconds)
+        r_set(r1, verbosed_versioned_key, node_data, ttl=MASTER_TTL)
         return json_response(
             node_data,
             headers={"X-Cache": "MISS"},

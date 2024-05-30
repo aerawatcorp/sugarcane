@@ -107,7 +107,7 @@ class Catalog(BaseModel):
             return True
         return False
 
-    def start_build_lock(self, sub_catalog: str=None):
+    def start_build_lock(self, sub_catalog: str="root"):
         """Start the build by initiating the cache"""
         if Catalog.can_build_cache(f"catalog-status:{self.id}:{sub_catalog}") is False:
             raise CacheBuildAlreadyInitiated(
@@ -117,7 +117,7 @@ class Catalog(BaseModel):
         # Set the key in cache with ttl to match request timeout
         r_set(r1, f"catalog-status:{self.id}:{sub_catalog}", True, ttl=REQUEST_TIMEOUT)
 
-    def end_build_lock(self, sub_catalog: str=None):
+    def end_build_lock(self, sub_catalog: str="root"):
         """Remove the key from cache"""
         r_delete(r1, f"catalog-status:{self.id}:{sub_catalog}")
 
@@ -130,12 +130,8 @@ class Catalog(BaseModel):
         try:
             self.start_build_lock(sub_catalog)
 
-            now = get_local_time()
-            expires_on = now + timedelta(seconds=self.ttl)
-            
-            version = f"{self.latest_version}"
-            
-            store = Store.new(self, sub_catalog, expires_on, version, fetch_content=True)
+            expires_on = get_local_time() + timedelta(seconds=self.ttl)
+            store = Store.new(self, sub_catalog, expires_on, self.latest_version, fetch_content=True)
 
             self.end_build_lock(sub_catalog)
         except Exception as exp:
@@ -158,12 +154,10 @@ class Catalog(BaseModel):
             expires_on = now + timedelta(seconds=self.ttl)
             
             version_by_timestamp = int(now.timestamp())
-            version = version_by_timestamp
-            
-            store = Store.new(self, None, expires_on, version, fetch_content=True)
+            store = Store.new(self, None, expires_on, version_by_timestamp, fetch_content=True)
             
             obj = Catalog.objects.select_for_update().get(pk=self.pk)
-            obj.latest_version = version
+            obj.latest_version = version_by_timestamp
             obj.latest_expiry = expires_on
             obj.save(update_fields=["updated_on", "latest_version", "latest_expiry"])
 
@@ -179,7 +173,7 @@ class Catalog(BaseModel):
         return store
 
     @classmethod
-    def get_master_schema(cls, verbose: bool = True):
+    def get_master_schema(cls):
         """Build master schema"""
         now = get_local_time()
         expires_on = str(now + timedelta(seconds=MASTER_TTL))
@@ -207,16 +201,13 @@ class Catalog(BaseModel):
         nodes = {}
         for i in catalogs:
             node_data = {
-                "expires_on": str(i.expires_on),
+                "expires_on": str(get_local_isotime(i.expires_on)),
                 "url": i.get_node_url(),
                 "is_live": i.is_live,
                 "sub_catalogs": i.sub_catalogs,
+                "version": i.latest_version, 
+                "updated_on": str(i.updated_on)
             }
-            if not verbose:
-                node_data.update(
-                    {"version": i.latest_version, "updated_on": str(i.updated_on)}
-                )
-
             nodes.update({i.name: node_data})
 
         cache_data["nodes"] = nodes
@@ -285,12 +276,10 @@ class Store(BaseModel):
         )
         if fetch_content:
             obj.fetch_and_write_to_db()
-            # TODO - Move redis to sugarcane
-            obj.write_to_redis()
         return obj
 
     def get_cache_redis_key(self):
-        return f"{self.catalog.name}-{self.sub_catalog}-{self.version}"
+        return f"{self.catalog.name}-{self.sub_catalog}:{self.version}"
 
     def request_data(self) -> dict:
         """Get new data from request url"""
@@ -328,11 +317,6 @@ class Store(BaseModel):
 
     def get_node_schema(self):
         """Build node schema"""
-        now = get_local_time()
-        expires_on = now + timedelta(seconds=NODES_TTL)
-
-        if expires_on > self.expires_on:
-            expires_on = self.expires_on
 
         data = {
             "scheme": "node",
@@ -340,9 +324,10 @@ class Store(BaseModel):
             "version": self.version,
             "expires_on": str(get_local_isotime(self.expires_on)),
             "updated_on": str(get_local_isotime(self.updated_on)),
+            "sub_catalog": self.sub_catalog,
             "data": self.content,
         }
-        return data, expires_on
+        return data, self.expires_on
 
     def fetch_and_write_to_db(self):
         """Write to db"""

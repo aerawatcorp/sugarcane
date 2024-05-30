@@ -75,6 +75,7 @@ class CatalogAdmin(admin.ModelAdmin):
 class StoreAdmin(admin.ModelAdmin):
     list_display = [
         "catalog",
+        "sub_catalog",
         "url",
         "version",
         "is_active",
