@@ -1,11 +1,6 @@
-import json
-import random
-import sys
 import humanize
-import redis
-import requests
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from sugarlib.redis_helpers import r_master_etag
 
 
@@ -32,8 +27,11 @@ def master_etag_verification(request, conn):
         return stored_etag == etag
     return None
 
+
 def get_expires_on_ttl(expires_datetime):
-    ttl = (datetime.strptime(expires_datetime, "%Y-%m-%d %H:%M:%S.%f") - datetime.now()).total_seconds()
+    ttl = (
+        datetime.strptime(expires_datetime, "%Y-%m-%d %H:%M:%S.%f") - datetime.now()
+    ).total_seconds()
     if ttl < 0:
         return False
     return int(ttl)

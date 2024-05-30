@@ -2,10 +2,10 @@ import os
 
 from decouple import AutoConfig
 
-config = AutoConfig(search_path='/app')
+config = AutoConfig(search_path="/app")
 
 CONTENT_ROOT = os.path.join(os.path.dirname(__file__), "../content/datadir/")
-MASTER_SCHEMA_PATH = os.path.join(CONTENT_ROOT, f"master.json")
+MASTER_SCHEMA_PATH = os.path.join(CONTENT_ROOT, "master.json")
 
 REDIS_HOST_CANE = config("REDIS_HOST_CANE")
 REDIS_PORT_CANE = config("REDIS_PORT_CANE")
