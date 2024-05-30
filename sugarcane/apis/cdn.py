@@ -7,6 +7,7 @@ from flask import Blueprint, abort
 from flask import request
 from urllib.parse import urlencode
 
+from core.init import flask_app
 from sugarlib.constants import (
     MASTER_KEY,
     MASTER_KEY_VERBOSED,
@@ -34,8 +35,7 @@ def master():
     cached_master, ttl = r_get(r1, MASTER_KEY_VERBOSED)
 
     if ttl is not False:
-        # TODO - Add prints in logging instead
-        print("Return data from cache")
+        flask_app.logger.info("[MASTER] Return master data from cache")
         # Return cache HIT data
         return json_response(
             cached_master,
@@ -48,22 +48,23 @@ def master():
 
     # In case of cache MISS, retrieve the data
     if MASTER_JAGGERY_API_URL:
-        print("Retrieve and return data")
+        flask_app.logger.info("[MASTER] Initiate retrieve master data")
         response = requests.get(MASTER_JAGGERY_API_URL)
         if not response.ok:
-            print(response.content)
-            print("Could not fetch data")
+            flask_app.logger.error(f"[MASTER] Could not fetch master data {response.content}")
             abort(503)
 
         master_data = response.json()
 
         # Set in memory cache in case of cache MISS
+        flask_app.logger.info("[MASTER] Set master data in cache")
         r_set(r1, MASTER_KEY, master_data, ttl=MASTER_TTL)
 
         for _, v in (master_data.get("nodes") or {}).items():
-            v.pop("version")
-            v.pop("updated_on")
+            v.pop("version", None)
+            v.pop("updated_on", None)
 
+        flask_app.logger.info("[MASTER] Set master verbose data in cache")
         r_set(r1, MASTER_KEY_VERBOSED, master_data, ttl=MASTER_TTL)
         etag = etag_master(master_data["updated_on"])
         r_master_etag(r1, etag)
@@ -85,17 +86,17 @@ def node(version, node_name):
     node_data, node_ttl = r_get(r1, versioned_key)
 
     if node_ttl is not False:
+        flask_app.logger.info(f"[NODE] Return {verbosed_versioned_key} node data from cache")
         # Return cache HIT data
         return json_response(node_data, headers={"X-Cache": "HIT"}, etag=etag)
 
     if NODE_JAGGERY_API_URL:
-        print("Retrieve and return data")
+        flask_app.logger.info(f"[NODE] Initiate retrieve {verbosed_versioned_key} node data")
         response = requests.get(
             NODE_JAGGERY_API_URL.format(node_name=node_name), params=request.args
         )
         if not response.ok:
-            print(response.content)
-            print("Could not fetch data")
+            flask_app.logger.error(f"[NODE] Could not fetch {verbosed_versioned_key} node data {response.content}")
             abort(503)
 
         node_data = response.json()
@@ -105,7 +106,10 @@ def node(version, node_name):
         ttl_seconds = (expires_on_datetime - datetime.now(pytz.utc)).seconds
 
         # Set in memory cache in case of cache MISS
+        flask_app.logger.info(f"[NODE] Set {versioned_key} data in cache")
         r_set(r1, versioned_key, node_data, ttl=ttl_seconds)
+        
+        flask_app.logger.info(f"[NODE] Set {verbosed_versioned_key} data in cache")
         r_set(r1, verbosed_versioned_key, node_data, ttl=MASTER_TTL)
         return json_response(
             node_data,
