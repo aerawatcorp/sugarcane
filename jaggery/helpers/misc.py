@@ -3,31 +3,9 @@ import json
 
 from typing import Literal
 from datetime import datetime
-from django.core.validators import URLValidator
 from django.utils import timezone
-from urllib import parse
 
 from .exceptions import CaneException
-
-
-def build_url(url: str, relative_url: str = "", query_params: dict = {}) -> str:
-    """Build absolute url
-    Args:
-            url: URL path
-            relative_url: Relative URL path
-            query_params (dict): Query params for the url. Defaults to {}
-    """
-    URLValidator()(url)
-
-    parsed_url = parse.urlparse(url)
-    parsed_query = parse.parse_qs(parsed_url.query)
-    query_params.update(parsed_query)
-    url = parsed_url.scheme + "://" + parsed_url.netloc
-
-    absoulte_url = parse.urljoin(url, relative_url)
-    if query_params:
-        absoulte_url = absoulte_url + "?" + parse.urlencode(query_params, doseq=True)
-    return absoulte_url
 
 
 def get_local_time() -> datetime:
