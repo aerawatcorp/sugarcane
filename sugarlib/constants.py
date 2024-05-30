@@ -27,7 +27,6 @@ EXPIRED_PREFIX = config("EXPIRED_PREFIX")
 EXPIRED_TTL = config("EXPIRED_TTL", cast=int)
 
 MASTER_TTL = config("MASTER_TTL", cast=int)
-NODES_TTL = config("NODES_TTL", cast=int)
 
 MASTER_API_URL = config("MASTER_API_URL", default="")
 NODE_API_URL = config("NODE_API_URL", default="")

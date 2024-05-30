@@ -8,7 +8,6 @@ from flask import request
 from urllib.parse import urlencode
 
 from sugarlib.constants import (
-    NODES_TTL,
     MASTER_KEY,
     MASTER_KEY_VERBOSED,
     MASTER_TTL,
@@ -20,7 +19,6 @@ from sugarlib.helpers import etag_master, etag_node
 from sugarlib.redis_client import r1_cane as r1
 from sugarlib.redis_helpers import (
     r_get,
-    r_log_expire,
     r_master_etag,
     r_set,
 )
@@ -62,12 +60,11 @@ def master():
         # Set in memory cache in case of cache MISS
         r_set(r1, MASTER_KEY, master_data, ttl=MASTER_TTL)
 
-        for _, v in (master_data.get("nodes") or {}).items()    :
+        for _, v in (master_data.get("nodes") or {}).items():
             v.pop("version")
             v.pop("updated_on")
 
         r_set(r1, MASTER_KEY_VERBOSED, master_data, ttl=MASTER_TTL)
-        
         etag = etag_master(master_data["updated_on"])
         r_master_etag(r1, etag)
         return json_response(data=master_data, headers={"X-Cache": "MISS"}, etag=etag)
@@ -102,7 +99,6 @@ def node(version, node_name):
             abort(503)
 
         node_data = response.json()
-        
         expires_on = node_data["expires_on"]
         expires_on_datetime = parse(expires_on, fuzzy=True)
 

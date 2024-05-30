@@ -11,7 +11,6 @@ from sugarlib.constants import (
     MASTER_KEY,
     MASTER_TTL,
     EXPIRED_PREFIX,
-    NODES_TTL,
     R_PREFIX,
 )
 

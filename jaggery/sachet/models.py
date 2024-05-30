@@ -14,7 +14,6 @@ from sugarlib.redis_client import r1_cane as r1
 from sugarlib.redis_helpers import r_set, r_get, r_delete
 from sugarlib.constants import (
     MASTER_TTL,
-    NODES_TTL,
     NODE_API_URL,
     MASTER_KEY,
     REQUEST_TIMEOUT,
@@ -25,7 +24,7 @@ from sachet.exceptions import (
     DatabaseCacheExpired,
     RedisCacheExpired,
     CacheBuildAlreadyInitiated,
-    InvalidSubCatalogException
+    InvalidSubCatalogException,
 )
 from helpers.models import BaseModel
 from helpers.misc import get_local_time, get_local_isotime
@@ -66,7 +65,7 @@ class Catalog(BaseModel):
     @property
     def is_expired(self):
         return self.latest_expiry < get_local_time()
-    
+
     def __str__(self) -> str:
         return self.name
 
@@ -83,7 +82,7 @@ class Catalog(BaseModel):
         """The url from which the current node data is retrieved"""
         return NODE_API_URL.format(node_name=self.slug, version=self.latest_version)
 
-    def get_or_create_latest_store(self, sub_catalog: str=None) -> "Store":
+    def get_or_create_latest_store(self, sub_catalog: str = None) -> "Store":
         """Get latest store with version"""
         if sub_catalog and sub_catalog not in self.sub_catalogs:
             raise InvalidSubCatalogException(f"Invalid {sub_catalog} for catalog")
@@ -91,10 +90,10 @@ class Catalog(BaseModel):
         store: Store = self.stores.filter(
             version=self.latest_version, is_active=True, sub_catalog=sub_catalog
         ).last()
-        
+
         if not store or store.is_expired or self.is_expired:
             store = self.fetch_main_catalog_content()
-            
+
             if sub_catalog:
                 store = self.fetch_sub_catalog_content(sub_catalog)
         return store
@@ -107,7 +106,7 @@ class Catalog(BaseModel):
             return True
         return False
 
-    def start_build_lock(self, sub_catalog: str="root"):
+    def start_build_lock(self, sub_catalog: str = "root"):
         """Start the build by initiating the cache"""
         if Catalog.can_build_cache(f"catalog-status:{self.id}:{sub_catalog}") is False:
             raise CacheBuildAlreadyInitiated(
@@ -117,7 +116,7 @@ class Catalog(BaseModel):
         # Set the key in cache with ttl to match request timeout
         r_set(r1, f"catalog-status:{self.id}:{sub_catalog}", True, ttl=REQUEST_TIMEOUT)
 
-    def end_build_lock(self, sub_catalog: str="root"):
+    def end_build_lock(self, sub_catalog: str = "root"):
         """Remove the key from cache"""
         r_delete(r1, f"catalog-status:{self.id}:{sub_catalog}")
 
@@ -131,7 +130,9 @@ class Catalog(BaseModel):
             self.start_build_lock(sub_catalog)
 
             expires_on = get_local_time() + timedelta(seconds=self.ttl)
-            store = Store.new(self, sub_catalog, expires_on, self.latest_version, fetch_content=True)
+            store = Store.new(
+                self, sub_catalog, expires_on, self.latest_version, fetch_content=True
+            )
 
             self.end_build_lock(sub_catalog)
         except Exception as exp:
@@ -152,10 +153,12 @@ class Catalog(BaseModel):
 
             now = get_local_time()
             expires_on = now + timedelta(seconds=self.ttl)
-            
+
             version_by_timestamp = int(now.timestamp())
-            store = Store.new(self, None, expires_on, version_by_timestamp, fetch_content=True)
-            
+            store = Store.new(
+                self, None, expires_on, version_by_timestamp, fetch_content=True
+            )
+
             obj = Catalog.objects.select_for_update().get(pk=self.pk)
             obj.latest_version = version_by_timestamp
             obj.latest_expiry = expires_on
@@ -205,8 +208,8 @@ class Catalog(BaseModel):
                 "url": i.get_node_url(),
                 "is_live": i.is_live,
                 "sub_catalogs": i.sub_catalogs,
-                "version": i.latest_version, 
-                "updated_on": str(i.updated_on)
+                "version": i.latest_version,
+                "updated_on": str(i.updated_on),
             }
             nodes.update({i.name: node_data})
 
@@ -234,10 +237,13 @@ class Store(BaseModel):
     )
     sub_catalog = models.CharField(max_length=255, null=True, blank=True)
     url = models.URLField(help_text=_("URL to get the data from"))
-    
-    has_content = models.BooleanField(default=False, help_text=_("If store is not yet ready with the cached content set to False"))
+
+    has_content = models.BooleanField(
+        default=False,
+        help_text=_("If store is not yet ready with the cached content set to False"),
+    )
     content = models.JSONField(default=dict, blank=True)
-    
+
     version = models.CharField(help_text=_("Version of the retrieved data"))
     expires_on = models.DateTimeField()
 
@@ -249,14 +255,19 @@ class Store(BaseModel):
     @property
     def is_expired(self):
         return self.expires_on < get_local_time()
-    
+
     class Meta:
         unique_together = ["catalog", "sub_catalog", "version"]
 
     @classmethod
     @transaction.atomic
     def new(
-        cls, catalog: Catalog, sub_catalog: str, expires_on: datetime, version: str, fetch_content: bool=False
+        cls,
+        catalog: Catalog,
+        sub_catalog: str,
+        expires_on: datetime,
+        version: str,
+        fetch_content: bool = False,
     ):
         """
         Create a new store for the catalog.
@@ -267,12 +278,12 @@ class Store(BaseModel):
             sub_catalog=sub_catalog,
             version=version,
             defaults={
-                "url" :catalog.provider_url,
-                "expires_on" :expires_on,
-                "is_active" :True,
-                "has_content" :False,
-                "content" :{},
-            }
+                "url": catalog.provider_url,
+                "expires_on": expires_on,
+                "is_active": True,
+                "has_content": False,
+                "content": {},
+            },
         )
         if fetch_content:
             obj.fetch_and_write_to_db()
