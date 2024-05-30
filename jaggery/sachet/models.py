@@ -15,14 +15,11 @@ from sugarlib.redis_helpers import r_set, r_get, r_delete
 from sugarlib.constants import (
     MASTER_TTL,
     NODE_API_URL,
-    MASTER_KEY,
     REQUEST_TIMEOUT,
 )
 
 from sachet.exceptions import (
     WriteToCacheError,
-    DatabaseCacheExpired,
-    RedisCacheExpired,
     CacheBuildAlreadyInitiated,
     InvalidSubCatalogException,
 )
@@ -71,7 +68,8 @@ class Catalog(BaseModel):
 
     def _slugify(self) -> str:
         if not self.slug:
-            self.slug = slugify(self.name)
+            name = self.name.replace("/", "-")
+            self.slug = slugify(name)
         return self.slug
 
     def save(self, *args, **kwargs):

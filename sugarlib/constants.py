@@ -31,6 +31,7 @@ MASTER_TTL = config("MASTER_TTL", cast=int)
 MASTER_API_URL = config("MASTER_API_URL", default="")
 NODE_API_URL = config("NODE_API_URL", default="")
 
+JAGGERY_BASE_URL = config("JAGGERY_BASE_URL", default="")
 MASTER_JAGGERY_API_URL = config("MASTER_JAGGERY_API_URL", default="")
 NODE_JAGGERY_API_URL = config("NODE_JAGGERY_API_URL", default="")
 

@@ -63,7 +63,9 @@ class CatalogAdmin(admin.ModelAdmin):
     def invalidate_master_cache(self, request):
         r_delete(r1, MASTER_KEY)
         r_delete(r1, MASTER_KEY_VERBOSED)
-        logger.info(f"[MASTER] Master rebuild invalidated by {request.user} ({request.user.id})")
+        logger.info(
+            f"[MASTER] Master rebuild invalidated by {request.user} ({request.user.id})"
+        )
         messages.success(request, "Master cache invalidated successfully.")
         return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
