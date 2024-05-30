@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
@@ -5,6 +7,12 @@ from django.utils.html import format_html
 from django.contrib import messages
 
 from sachet.models import Catalog, Store
+from sugarlib.constants import MASTER_KEY, MASTER_KEY_VERBOSED
+from sugarlib.redis_client import r1_cane as r1
+from sugarlib.redis_helpers import r_delete
+
+
+logger = logging.getLogger(__name__)
 
 
 @admin.register(Catalog)
@@ -33,7 +41,7 @@ class CatalogAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context["custom_buttons"] = [
-            {"name": "Rebuild Master", "url": "rebuild_master_schema/"},
+            {"name": "Invalidate Mater", "url": "invalidate_master_cache/"},
         ]
         return super().changelist_view(request, extra_context=extra_context)
 
@@ -41,8 +49,8 @@ class CatalogAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path(
-                "rebuild_master_schema/",
-                self.admin_site.admin_view(self.rebuild_master_schema),
+                "invalidate_master_cache/",
+                self.admin_site.admin_view(self.invalidate_master_cache),
             ),
             path(
                 "rebuild_node_schema/<int:pk>/",
@@ -52,17 +60,19 @@ class CatalogAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
-    def rebuild_master_schema(self, request):
-        Catalog.write_master_schema_to_cache()
-        messages.success(request, "Master schema rebuild completed")
+    def invalidate_master_cache(self, request):
+        r_delete(r1, MASTER_KEY)
+        r_delete(r1, MASTER_KEY_VERBOSED)
+        logger.info(f"[MASTER] Master rebuild invalidated by {request.user} ({request.user.id})")
+        messages.success(request, "Master cache invalidated successfully.")
         return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
     def rebuild_node_schema(self, request, pk):
         catalog = Catalog.objects.get(pk=pk)
-        store: Store = catalog.get_lastest_store()
         try:
-            store.invalidate_cache()
-            messages.success(request, "Store schema rebuild completed")
+            for sub_catalog in catalog.sub_catalogs:
+                catalog.get_or_create_latest_store(sub_catalog)
+            messages.success(request, "Node rebuild completed")
         except Store.DoesNotExist:
             messages.error(
                 request,

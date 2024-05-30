@@ -31,7 +31,6 @@ class CatalogViewset(ModelViewSet):
     @action(methods=["GET"], detail=True, url_path="node-data")
     def node_data(self, request, *args, **kwargs):
         """Get node data and initiate write in cache"""
-        # TODO _ need to change this
         sub_catalog = request.GET.urlencode()
         instance: Catalog = self.get_object()
         try:

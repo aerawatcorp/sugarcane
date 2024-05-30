@@ -217,17 +217,6 @@ class Catalog(BaseModel):
 
         return cache_data, expires_on
 
-    @classmethod
-    def write_master_schema_to_cache(cls):
-        """Write master schema in cache"""
-        cache_data, _ = cls.get_master_schema()
-        r_set(r1, MASTER_KEY, cache_data, ttl=MASTER_TTL)
-
-    @classmethod
-    def get_master_schema_from_cache(cls):
-        """Write master schema in cache"""
-        return r_get(r1, MASTER_KEY)
-
 
 class Store(BaseModel):
     """Store information related to cataolog store"""
@@ -289,9 +278,6 @@ class Store(BaseModel):
             obj.fetch_and_write_to_db()
         return obj
 
-    def get_cache_redis_key(self):
-        return f"{self.catalog.name}-{self.sub_catalog}:{self.version}"
-
     def request_data(self) -> dict:
         """Get new data from request url"""
         response = requests.get(self.url, timeout=REQUEST_TIMEOUT)
@@ -301,30 +287,6 @@ class Store(BaseModel):
                 f"[STORE CACHE] Error response from ({self.url}) for store idx - {self.idx}"
             )
         return response.json()
-
-    def validate_cache(self):
-        """Validate expiry date of the cache"""
-        now = get_local_time()
-
-        if self.expires_on < now:
-            logger.error(
-                f"[STORE] DB cache invalid - {self.get_cache_file_path()} idx - {self.idx}"
-            )
-            raise DatabaseCacheExpired("Invalid database level cache")
-
-        try:
-            _, ttl = r_get(r1, self.get_cache_redis_key())
-            if ttl is False:
-                logger.error(
-                    f"[STORE] Redis cache invalid - {self.get_cache_redis_key()} idx - {self.idx}"
-                )
-                raise RedisCacheExpired("Invalid redis cache")
-        except Exception as exp:
-            logger.error(
-                f"[STORE] Redis cache validation error - {self.get_cache_redis_key()} idx - {self.idx}"
-                f"\n{exp} {traceback.format_exc()}"
-            )
-            raise RedisCacheExpired("Invalid redis cache")
 
     def get_node_schema(self):
         """Build node schema"""
@@ -351,30 +313,3 @@ class Store(BaseModel):
         self.has_content = True
         self.expires_on = now + timedelta(seconds=self.catalog.ttl)
         self.save()
-
-    def write_to_redis(self):
-        """Write to redis as 3rd level cache"""
-        cache_data, _ = self.get_node_schema()
-        r_set(r1, self.get_cache_redis_key(), cache_data, ttl=self.catalog.ttl)
-
-    def invalidate_cache(self):
-        """Invalidate and write new cache content"""
-        self.fetch_and_write_to_db()
-        self.write_to_redis()
-
-    def get_data(self):
-        """Validate mulitple level cached data's expiry date"""
-        now = get_local_time()
-
-        data, ttl = r_get(r1, self.get_cache_redis_key())
-        if ttl is not False:
-            logger.info(f"[STORE] Get redis cache data for idx - {self.idx}")
-            return data
-
-        if self.expires_on > now:
-            logger.info(f"[STORE] Get db cache data for idx - {self.idx}")
-            self.write_to_redis()
-            return self.get_node_schema()[0]
-        else:
-            self.invalidate_cache()
-            return self.get_node_schema()[0]
