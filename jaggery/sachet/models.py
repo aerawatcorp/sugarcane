@@ -179,12 +179,12 @@ class Catalog(BaseModel):
     def get_master_schema(cls):
         """Build master schema"""
         now = get_local_time()
-        expires_on = str(now + timedelta(seconds=MASTER_TTL))
+        expires_on = now + timedelta(seconds=MASTER_TTL)
 
         cache_data = {
-            "expires_on": expires_on,
+            "expires_on": str(get_local_isotime(expires_on)),
             "scheme": "master",
-            "updated_on": str(now),
+            "updated_on": str(get_local_isotime(now)),
             "nodes": {},
         }
 
