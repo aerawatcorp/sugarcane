@@ -6,7 +6,7 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 from django.contrib import messages
 
-from sachet.models import Catalog, Store
+from sachet.models import Catalog, Sachet
 from sachet.tasks import fetch_catalog_content
 from sugarlib.constants import MASTER_KEY, MASTER_KEY_VERBOSED
 from sugarlib.redis_client import r1_cane as r1
@@ -75,16 +75,16 @@ class CatalogAdmin(admin.ModelAdmin):
             catalog = Catalog.objects.get(pk=pk)
             fetch_catalog_content(catalog.id)
             messages.success(request, "Node rebuild task has been initiated")
-        except Store.DoesNotExist:
+        except Sachet.DoesNotExist:
             messages.error(
                 request,
-                "Store schema not found",
+                "Sachet schema not found",
             )
         return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
 
-@admin.register(Store)
-class StoreAdmin(admin.ModelAdmin):
+@admin.register(Sachet)
+class SachetAdmin(admin.ModelAdmin):
     list_display = [
         "catalog",
         "sub_catalog",
@@ -116,9 +116,9 @@ class StoreAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def rebuild_node_schema(self, request, pk):
-        store = Store.objects.get(pk=pk)
+        sachet = Sachet.objects.get(pk=pk)
         # Might need to change the headers
-        obj = store.catalog.get_or_create_latest_store(store.sub_catalog, force=True, headers=request.headers)
+        obj = sachet.catalog.get_or_create_latest_store(sachet.sub_catalog, force=True, headers=request.headers)
         obj_url = reverse('admin:sachet_store_change', args=[obj.pk])
 
         message = format_html(

@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 
-from sachet.models import Catalog, Store
+from sachet.models import Catalog, Sachet
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +34,11 @@ class CatalogViewset(ModelViewSet):
         sub_catalog = request.GET.urlencode()
         instance: Catalog = self.get_object()
         try:
-            store: Store = instance.get_or_create_latest_store(sub_catalog=sub_catalog, headers=request.headers)
-            data, _ = store.get_node_schema()
+            sachet: Sachet = instance.get_or_create_latest_store(sub_catalog=sub_catalog, headers=request.headers)
+            data, _ = sachet.get_node_schema()
             return Response(data)
-        except Store.DoesNotExist as exp:
-            logger.error(f"[NODE API] Store not found {exp} {traceback.format_exc()}")
+        except Sachet.DoesNotExist as exp:
+            logger.error(f"[NODE API] Sachet not found {exp} {traceback.format_exc()}")
             return Response(
                 {"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST
             )
