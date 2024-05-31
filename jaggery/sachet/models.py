@@ -284,9 +284,20 @@ class Sachet(BaseModel):
             obj.fetch_and_write_to_db(**kwargs)
         return obj
 
+    def _get_accepted_headers(self, headers):
+        accepted_headers = ["authorization", "content-type"]
+        new_headers = {}
+        for key, value in headers.items():
+            if key in accepted_headers:
+                new_headers.update({
+                    key: value
+                })
+
+        return new_headers
+    
     def request_data(self, headers: dict = {}) -> dict:
         """Get new data from request url"""
-        response = requests.get(self.url, timeout=REQUEST_TIMEOUT, headers=dict(headers))
+        response = requests.get(self.url, timeout=REQUEST_TIMEOUT, headers=self._get_accepted_headers(dict(headers)))
         if not response.ok:
             logger.error(f"[SACHET] Fetch data error idx - {self.idx} \n{response.content}")
             raise WriteToCacheError(
