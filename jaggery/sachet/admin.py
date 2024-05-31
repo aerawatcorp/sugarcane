@@ -42,7 +42,7 @@ class CatalogAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context["custom_buttons"] = [
-            {"name": "Invalidate Mater", "url": "invalidate_master_cache/"},
+            {"name": "Invalidate Master", "url": "invalidate_master_cache/"},
         ]
         return super().changelist_view(request, extra_context=extra_context)
 

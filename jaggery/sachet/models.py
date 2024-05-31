@@ -56,12 +56,12 @@ class Catalog(BaseModel):
             "If set to true, the client should directly initiate request ignoring the cache"
         ),
     )
-    latest_version = models.CharField(max_length=255)
-    latest_expiry = models.DateTimeField()
+    latest_version = models.CharField(max_length=255, null=True, blank=True)
+    latest_expiry = models.DateTimeField(null=True, blank=True)
 
     @property
     def is_expired(self):
-        return self.latest_expiry < get_local_time()
+        return self.latest_expiry < get_local_time() if self.latest_expiry else True
 
     def __str__(self) -> str:
         return self.name
@@ -91,7 +91,7 @@ class Catalog(BaseModel):
             version=self.latest_version, is_active=True, sub_catalog=sub_catalog, is_obsolete=False
         ).last()
 
-        if not store or store.is_expired or self.is_expired or force:
+        if not store or store.is_expired or self.is_expired or self.latest_version is None or force:
             store = self.fetch_main_catalog_content(**kwargs)
 
             if sub_catalog:
@@ -196,7 +196,7 @@ class Catalog(BaseModel):
         # Annotate the Catalog queryset with the expires_on field from the subquery,
         # and use Coalesce to handle None values
         catalogs = (
-            Catalog.objects.filter(is_obsolete=False)
+            Catalog.objects.filter(is_obsolete=False, latest_version__isnull=False, latest_expiry__isnull=False)
             .annotate(expires_on=Coalesce(Subquery(expires_on_subquery), Value(None)))
             .order_by("-id")
         )
