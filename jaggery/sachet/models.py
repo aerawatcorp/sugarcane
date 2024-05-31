@@ -80,8 +80,10 @@ class Catalog(BaseModel):
         """The url from which the current node data is retrieved"""
         return NODE_API_URL.format(node_name=self.slug, version=self.latest_version)
 
-    def get_or_create_latest_store(self, sub_catalog: str = None) -> "Store":
-        """Get latest store with version"""
+    def get_or_create_latest_store(self, sub_catalog: str = None, force: bool=False) -> "Store":
+        """Get latest store with version
+        :param force: If set to true will force to get latest store disregarding the expiry date.
+        """
         if sub_catalog and sub_catalog not in self.sub_catalogs:
             raise InvalidSubCatalogException(f"Invalid {sub_catalog} for catalog")
 
@@ -89,7 +91,7 @@ class Catalog(BaseModel):
             version=self.latest_version, is_active=True, sub_catalog=sub_catalog
         ).last()
 
-        if not store or store.is_expired or self.is_expired:
+        if not store or store.is_expired or self.is_expired or force:
             store = self.fetch_main_catalog_content()
 
             if sub_catalog:

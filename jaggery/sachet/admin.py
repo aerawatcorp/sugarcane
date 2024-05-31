@@ -34,8 +34,8 @@ class CatalogAdmin(admin.ModelAdmin):
 
     def action(self, obj):
         return format_html(
-            '<a class="btn btn-info" href="{}" >Rebuild Node</a>',
-            reverse("admin:rebuild_node_schema", args=[obj.pk]),
+            '<a class="btn btn-info" href="{}" >Rebuild Nodes</a>',
+            reverse("admin:rebuild_all_node_schema", args=[obj.pk]),
         )
 
     def changelist_view(self, request, extra_context=None):
@@ -53,9 +53,9 @@ class CatalogAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.invalidate_master_cache),
             ),
             path(
-                "rebuild_node_schema/<int:pk>/",
-                self.admin_site.admin_view(self.rebuild_node_schema),
-                name="rebuild_node_schema",
+                "rebuild_all_node_schema/<int:pk>/",
+                self.admin_site.admin_view(self.rebuild_all_node_schema),
+                name="rebuild_all_node_schema",
             ),
         ]
         return custom_urls + urls
@@ -69,7 +69,7 @@ class CatalogAdmin(admin.ModelAdmin):
         messages.success(request, "Master cache invalidated successfully.")
         return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
-    def rebuild_node_schema(self, request, pk):
+    def rebuild_all_node_schema(self, request, pk):
         catalog = Catalog.objects.get(pk=pk)
         try:
             for sub_catalog in catalog.sub_catalogs:
@@ -93,6 +93,35 @@ class StoreAdmin(admin.ModelAdmin):
         "is_active",
         "expires_on",
         "updated_on",
+        "action",
     ]
     list_filter = ["is_obsolete", "is_active"]
     search_fields = ["catalog__name", "catalog__provider"]
+
+    def action(self, obj):
+        return format_html(
+            '<a class="btn btn-info" href="{}" title="Force the build of node">Force Rebuild Node</a>',
+            reverse("admin:rebuild_node_schema", args=[obj.pk]),
+        )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "rebuild_node_schema/<int:pk>/",
+                self.admin_site.admin_view(self.rebuild_node_schema),
+                name="rebuild_node_schema",
+            ),
+        ]
+        return custom_urls + urls
+
+    def rebuild_node_schema(self, request, pk):
+        store = Store.objects.get(pk=pk)
+        obj = store.catalog.get_or_create_latest_store(store.sub_catalog, force=True)
+        obj_url = reverse('admin:sachet_store_change', args=[obj.pk])
+
+        message = format_html(
+            f'Node rebuild completed <a href="{obj_url}" style="color:#ffffff">{obj}</a>',
+        )
+        messages.success(request, message)
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
