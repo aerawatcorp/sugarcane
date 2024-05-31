@@ -88,7 +88,7 @@ class Catalog(BaseModel):
             raise InvalidSubCatalogException(f"Invalid {sub_catalog} for catalog")
 
         store: Store = self.stores.filter(
-            version=self.latest_version, is_active=True, sub_catalog=sub_catalog
+            version=self.latest_version, is_active=True, sub_catalog=sub_catalog, is_obsolete=False
         ).last()
 
         if not store or store.is_expired or self.is_expired or force:
@@ -130,6 +130,7 @@ class Catalog(BaseModel):
             self.start_build_lock(sub_catalog)
 
             expires_on = get_local_time() + timedelta(seconds=self.ttl)
+
             store = Store.new(
                 self, sub_catalog, expires_on, self.latest_version, fetch_content=True, **kwargs
             )
@@ -180,7 +181,6 @@ class Catalog(BaseModel):
         """Build master schema"""
         now = get_local_time()
         expires_on = now + timedelta(seconds=MASTER_TTL)
-
         cache_data = {
             "expires_on": str(get_local_isotime(expires_on)),
             "scheme": "master",
@@ -263,6 +263,11 @@ class Store(BaseModel):
         Create a new store for the catalog.
         Expecting the store to be the latest version for the catalog.
         """
+        old_version_store = cls.objects.filter(catalog=catalog, sub_catalog=sub_catalog).last()
+        if old_version_store:
+            old_version_store.is_active = False
+            old_version_store.save(update_fields=["is_active", "updated_on"])
+
         obj, _ = cls.objects.get_or_create(
             catalog=catalog,
             sub_catalog=sub_catalog,
@@ -283,7 +288,7 @@ class Store(BaseModel):
         """Get new data from request url"""
         response = requests.get(self.url, timeout=REQUEST_TIMEOUT, headers=dict(headers))
         if not response.ok:
-            logger.error(f"[STORE] Fetch data error idx - {self.idx}")
+            logger.error(f"[STORE] Fetch data error idx - {self.idx} \n{response.content}")
             raise WriteToCacheError(
                 f"[STORE CACHE] Error response from ({self.url}) for store idx - {self.idx}"
             )

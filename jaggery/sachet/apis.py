@@ -23,7 +23,7 @@ class CatalogViewset(ModelViewSet):
             data, _ = Catalog.get_master_schema()
             return Response(data)
         except Exception as exp:
-            logging.error(f"[MASTER API] Retrieve error {exp} {traceback.format_exc()}")
+            logger.error(f"[MASTER API] Retrieve error {exp} {traceback.format_exc()}")
             return Response(
                 {"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -38,12 +38,12 @@ class CatalogViewset(ModelViewSet):
             data, _ = store.get_node_schema()
             return Response(data)
         except Store.DoesNotExist as exp:
-            logging.error(f"[NODE API] Store not found {exp} {traceback.format_exc()}")
+            logger.error(f"[NODE API] Store not found {exp} {traceback.format_exc()}")
             return Response(
                 {"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as exp:
-            logging.error(f"[NODE API] Retrieve error {exp} {traceback.format_exc()}")
+            logger.error(f"[NODE API] Retrieve error {exp} {traceback.format_exc()}")
             return Response(
                 {"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST
             )

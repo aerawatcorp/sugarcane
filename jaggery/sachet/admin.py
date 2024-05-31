@@ -7,10 +7,10 @@ from django.utils.html import format_html
 from django.contrib import messages
 
 from sachet.models import Catalog, Store
+from sachet.tasks import fetch_catalog_content
 from sugarlib.constants import MASTER_KEY, MASTER_KEY_VERBOSED
 from sugarlib.redis_client import r1_cane as r1
 from sugarlib.redis_helpers import r_delete
-
 
 logger = logging.getLogger(__name__)
 
@@ -70,12 +70,10 @@ class CatalogAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
     def rebuild_all_node_schema(self, request, pk):
-        catalog = Catalog.objects.get(pk=pk)
         try:
-            for sub_catalog in catalog.sub_catalogs:
-                # Might need to change the headers
-                catalog.get_or_create_latest_store(sub_catalog, headers=request.headers)
-            messages.success(request, "Node rebuild completed")
+            catalog = Catalog.objects.get(pk=pk)
+            fetch_catalog_content(catalog.id)
+            messages.success(request, "Node rebuild task has been initiated")
         except Store.DoesNotExist:
             messages.error(
                 request,
