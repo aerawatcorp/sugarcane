@@ -47,7 +47,7 @@ def master():
     if MASTER_JAGGERY_API_URL:
         flask_app.logger.info("[MASTER] Initiate retrieve master data")
         url = build_url(JAGGERY_BASE_URL, MASTER_JAGGERY_API_URL)
-        response = requests.get(url)
+        response = requests.get(url, headers=dict(request.headers))
         if not response.ok:
             flask_app.logger.error(
                 f"[MASTER] Could not fetch master data {response.content}"
@@ -99,7 +99,7 @@ def node(version, node_name):
         url = build_url(
             JAGGERY_BASE_URL, NODE_JAGGERY_API_URL.format(node_name=node_name)
         )
-        response = requests.get(url, params=request.args)
+        response = requests.get(url, params=request.args, headers=dict(request.headers))
         if not response.ok:
             flask_app.logger.error(
                 f"[NODE] Could not fetch {verbosed_versioned_key} node data {response.content}"

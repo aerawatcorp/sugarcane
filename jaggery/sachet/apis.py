@@ -34,7 +34,7 @@ class CatalogViewset(ModelViewSet):
         sub_catalog = request.GET.urlencode()
         instance: Catalog = self.get_object()
         try:
-            store: Store = instance.get_or_create_latest_store(sub_catalog=sub_catalog)
+            store: Store = instance.get_or_create_latest_store(sub_catalog=sub_catalog, headers=request.headers)
             data, _ = store.get_node_schema()
             return Response(data)
         except Store.DoesNotExist as exp:

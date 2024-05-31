@@ -1,4 +1,0 @@
-[flake8]
-exclude = .git,.tox,*/migrations/*
-max-line-length = 120
-ignore = E252,E309,W191,W504

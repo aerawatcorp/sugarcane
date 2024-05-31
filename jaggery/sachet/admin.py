@@ -73,7 +73,8 @@ class CatalogAdmin(admin.ModelAdmin):
         catalog = Catalog.objects.get(pk=pk)
         try:
             for sub_catalog in catalog.sub_catalogs:
-                catalog.get_or_create_latest_store(sub_catalog)
+                # Might need to change the headers
+                catalog.get_or_create_latest_store(sub_catalog, headers=request.headers)
             messages.success(request, "Node rebuild completed")
         except Store.DoesNotExist:
             messages.error(
@@ -117,7 +118,8 @@ class StoreAdmin(admin.ModelAdmin):
 
     def rebuild_node_schema(self, request, pk):
         store = Store.objects.get(pk=pk)
-        obj = store.catalog.get_or_create_latest_store(store.sub_catalog, force=True)
+        # Might need to change the headers
+        obj = store.catalog.get_or_create_latest_store(store.sub_catalog, force=True, headers=request.headers)
         obj_url = reverse('admin:sachet_store_change', args=[obj.pk])
 
         message = format_html(

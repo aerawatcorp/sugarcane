@@ -80,7 +80,7 @@ class Catalog(BaseModel):
         """The url from which the current node data is retrieved"""
         return NODE_API_URL.format(node_name=self.slug, version=self.latest_version)
 
-    def get_or_create_latest_store(self, sub_catalog: str = None, force: bool=False) -> "Store":
+    def get_or_create_latest_store(self, sub_catalog: str = None, force: bool=False, **kwargs) -> "Store":
         """Get latest store with version
         :param force: If set to true will force to get latest store disregarding the expiry date.
         """
@@ -92,10 +92,10 @@ class Catalog(BaseModel):
         ).last()
 
         if not store or store.is_expired or self.is_expired or force:
-            store = self.fetch_main_catalog_content()
+            store = self.fetch_main_catalog_content(**kwargs)
 
             if sub_catalog:
-                store = self.fetch_sub_catalog_content(sub_catalog)
+                store = self.fetch_sub_catalog_content(sub_catalog, **kwargs)
         return store
 
     @classmethod
@@ -121,7 +121,7 @@ class Catalog(BaseModel):
         r_delete(r1, f"catalog-status:{self.id}:{sub_catalog}")
 
     @transaction.atomic
-    def fetch_sub_catalog_content(self, sub_catalog: str):
+    def fetch_sub_catalog_content(self, sub_catalog: str, **kwargs):
         """Build new version of the store"""
         if sub_catalog and sub_catalog not in self.sub_catalogs:
             raise InvalidSubCatalogException(f"Invalid {sub_catalog} for catalog")
@@ -131,7 +131,7 @@ class Catalog(BaseModel):
 
             expires_on = get_local_time() + timedelta(seconds=self.ttl)
             store = Store.new(
-                self, sub_catalog, expires_on, self.latest_version, fetch_content=True
+                self, sub_catalog, expires_on, self.latest_version, fetch_content=True, **kwargs
             )
 
             self.end_build_lock(sub_catalog)
@@ -146,7 +146,7 @@ class Catalog(BaseModel):
         return store
 
     @transaction.atomic
-    def fetch_main_catalog_content(self):
+    def fetch_main_catalog_content(self, **kwargs):
         """Build new version of the store"""
         try:
             self.start_build_lock()
@@ -156,7 +156,7 @@ class Catalog(BaseModel):
 
             version_by_timestamp = int(now.timestamp())
             store = Store.new(
-                self, None, expires_on, version_by_timestamp, fetch_content=True
+                self, None, expires_on, version_by_timestamp, fetch_content=True, **kwargs
             )
 
             obj = Catalog.objects.select_for_update().get(pk=self.pk)
@@ -257,6 +257,7 @@ class Store(BaseModel):
         expires_on: datetime,
         version: str,
         fetch_content: bool = False,
+        **kwargs
     ):
         """
         Create a new store for the catalog.
@@ -275,12 +276,12 @@ class Store(BaseModel):
             },
         )
         if fetch_content:
-            obj.fetch_and_write_to_db()
+            obj.fetch_and_write_to_db(**kwargs)
         return obj
 
-    def request_data(self) -> dict:
+    def request_data(self, headers: dict = {}) -> dict:
         """Get new data from request url"""
-        response = requests.get(self.url, timeout=REQUEST_TIMEOUT)
+        response = requests.get(self.url, timeout=REQUEST_TIMEOUT, headers=dict(headers))
         if not response.ok:
             logger.error(f"[STORE] Fetch data error idx - {self.idx}")
             raise WriteToCacheError(
@@ -302,12 +303,12 @@ class Store(BaseModel):
         }
         return data, self.expires_on
 
-    def fetch_and_write_to_db(self):
+    def fetch_and_write_to_db(self, **kwargs):
         """Write to db"""
         now = get_local_time()
 
         # Get data from request
-        data = self.request_data()
+        data = self.request_data(headers=kwargs.get("headers") or {})
 
         self.content = data
         self.has_content = True
