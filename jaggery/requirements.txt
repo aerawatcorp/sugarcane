@@ -25,7 +25,9 @@ billiard==4.2.0
 black==24.4.2
     # via -r requirements.in
 celery==5.4.0
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   django-celery-results
 certifi==2024.2.2
     # via requests
 cfgv==3.4.0
@@ -52,10 +54,13 @@ distlib==0.3.8
 django==4.2.13
     # via
     #   -r requirements.in
+    #   django-celery-results
     #   django-extensions
     #   django-jazzmin
     #   django-shortuuidfield
     #   djangorestframework
+django-celery-results==2.5.1
+    # via -r requirements.in
 django-extensions==3.2.3
     # via -r requirements.in
 django-jazzmin==3.0.0

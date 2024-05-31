@@ -24,6 +24,7 @@ class CatalogAdmin(admin.ModelAdmin):
         "ttl",
         "is_live",
         "latest_version",
+        "latest_expiry",
         "updated_on",
         "action",
     ]
