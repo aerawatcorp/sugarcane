@@ -13,11 +13,11 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-	# Every minute
-	"Fetch Expired Catalog Contents": {
-		"task": "sachet.tasks.fetch_expired_catalogs_content",
-		"schedule": timedelta(seconds=60)
-	},
+    # Every minute
+    "Fetch Expired Catalog Contents": {
+        "task": "sachet.tasks.fetch_expired_catalogs_content",
+        "schedule": timedelta(seconds=60)
+    },
 
     "Celery Result Cleanup": {
         "task": "celery.backend_cleanup",
