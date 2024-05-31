@@ -1,7 +1,7 @@
 import os
 import logging.config
 
-LOG_FILE_PATH = os.path.expanduser("~") + "/sugarcane.log"
+LOG_FILE_PATH = os.path.expanduser("~") + "/jaggery.log"
 
 LOGGING = {
     "version": 1,

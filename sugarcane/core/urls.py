@@ -3,5 +3,5 @@ from apis.cdn import blueprint as cdn_blueprint
 
 blueprints = [
     (index_blueprint, "/"),
-    (cdn_blueprint, "/cdn"),
+    (cdn_blueprint, "/"),
 ]

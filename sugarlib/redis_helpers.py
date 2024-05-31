@@ -1,19 +1,12 @@
 import json
-import random
-import sys
 from datetime import datetime, timedelta
-
-import humanize
-import redis
-import requests
 
 from sugarlib.constants import (
     MASTER_KEY,
-    MASTER_TTL,
     EXPIRED_PREFIX,
-    NODES_TTL,
     R_PREFIX,
 )
+
 
 def verify_redis_connection(conn):
     # Verify if redis is running, by simply fetching a TTL value

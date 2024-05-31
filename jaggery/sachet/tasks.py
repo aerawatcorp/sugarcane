@@ -1,35 +1,35 @@
 import logging
 
 from jaggery.celery import app
-
 from sachet.models import Catalog
-from sachet.exceptions import CacheBuildAlreadyInitiated
 
-logging = logging.getLogger(__name__)
+from helpers.misc import get_local_time
+
+logger = logging.getLogger(__name__)
 
 
 @app.task
-def initiate_node_rebuild(catalog_id: int, sub_catalog: str):
-    """Create a new version store for the catalog"""
-    can_build = Catalog.can_build_cache(f"catalog-status:{catalog_id}:{sub_catalog}")
-    if can_build is False:
-        logging.info(
-            f"[NODE REBUILD ERROR] Catalog ({catalog_id}:{sub_catalog}) node rebuild already initaited"
-        )
-        return True
-
+def fetch_catalog_content(catalog_id, sub_catalog=None):
+    """Fetch catalog content"""
     catalog = Catalog.objects.get(id=catalog_id)
-    logging.info(
-        f"[NODE REBUILD INITIATED] Catalog ({catalog.name}:{sub_catalog}) node rebuild initiated"
-    )
-    try:
+    
+    catalog.fetch_main_catalog_content()
+
+    if sub_catalog:
         catalog.fetch_sub_catalog_content(sub_catalog)
-    except CacheBuildAlreadyInitiated:
-        logging.info(
-            f"[NODE REBUILD ERROR] Catalog ({catalog.name}:{sub_catalog}) node rebuild already initaited"
-        )
         return True
 
-    logging.info(
-        f"[NODE REBUILD COMPLETED] Catalog ({catalog.name}:{sub_catalog}) node rebuild completed"
-    )
+    for sub_catalog in catalog.sub_catalogs:
+        catalog.fetch_sub_catalog_content(sub_catalog)
+    return True
+
+
+@app.task
+def fetch_expired_catalogs_content():
+    """Fetch the expired catalogs contents"""
+
+    now = get_local_time()
+    catalogs = Catalog.objects.filter(latest_expiry__lte=now, is_obsolete=False, is_live=False)
+    for i in catalogs:
+        fetch_catalog_content.delay(i.id)
+    return True

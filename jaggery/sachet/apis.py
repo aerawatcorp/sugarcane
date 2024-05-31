@@ -23,7 +23,7 @@ class CatalogViewset(ModelViewSet):
             data, _ = Catalog.get_master_schema()
             return Response(data)
         except Exception as exp:
-            logging.error(f"[MASTER API] Retrieve error {exp} {traceback.format_exc()}")
+            logger.error(f"[MASTER API] Retrieve error {exp} {traceback.format_exc()}")
             return Response(
                 {"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -31,20 +31,19 @@ class CatalogViewset(ModelViewSet):
     @action(methods=["GET"], detail=True, url_path="node-data")
     def node_data(self, request, *args, **kwargs):
         """Get node data and initiate write in cache"""
-        # TODO _ need to change this
         sub_catalog = request.GET.urlencode()
         instance: Catalog = self.get_object()
         try:
-            store: Store = instance.get_or_create_latest_store(sub_catalog=sub_catalog)
+            store: Store = instance.get_or_create_latest_store(sub_catalog=sub_catalog, headers=request.headers)
             data, _ = store.get_node_schema()
             return Response(data)
         except Store.DoesNotExist as exp:
-            logging.error(f"[NODE API] Store not found {exp} {traceback.format_exc()}")
+            logger.error(f"[NODE API] Store not found {exp} {traceback.format_exc()}")
             return Response(
                 {"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as exp:
-            logging.error(f"[NODE API] Retrieve error {exp} {traceback.format_exc()}")
+            logger.error(f"[NODE API] Retrieve error {exp} {traceback.format_exc()}")
             return Response(
                 {"detail": "Could not fetch data"}, status=status.HTTP_400_BAD_REQUEST
             )

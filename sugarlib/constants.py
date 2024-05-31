@@ -2,10 +2,10 @@ import os
 
 from decouple import AutoConfig
 
-config = AutoConfig(search_path='/app')
+config = AutoConfig(search_path="/app")
 
 CONTENT_ROOT = os.path.join(os.path.dirname(__file__), "../content/datadir/")
-MASTER_SCHEMA_PATH = os.path.join(CONTENT_ROOT, f"master.json")
+MASTER_SCHEMA_PATH = os.path.join(CONTENT_ROOT, "master.json")
 
 REDIS_HOST_CANE = config("REDIS_HOST_CANE")
 REDIS_PORT_CANE = config("REDIS_PORT_CANE")
@@ -21,15 +21,17 @@ REDIS_DB_DEMO = config("REDIS_DB_DEMO")
 
 R_PREFIX = config("R_PREFIX")
 MASTER_KEY = config("MASTER_KEY")
+MASTER_KEY_VERBOSED = f"{MASTER_KEY}-v"
+
 EXPIRED_PREFIX = config("EXPIRED_PREFIX")
 EXPIRED_TTL = config("EXPIRED_TTL", cast=int)
 
 MASTER_TTL = config("MASTER_TTL", cast=int)
-NODES_TTL = config("NODES_TTL", cast=int)
 
 MASTER_API_URL = config("MASTER_API_URL", default="")
 NODE_API_URL = config("NODE_API_URL", default="")
 
+JAGGERY_BASE_URL = config("JAGGERY_BASE_URL", default="")
 MASTER_JAGGERY_API_URL = config("MASTER_JAGGERY_API_URL", default="")
 NODE_JAGGERY_API_URL = config("NODE_JAGGERY_API_URL", default="")
 

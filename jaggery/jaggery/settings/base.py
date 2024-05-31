@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_extensions",
+    "django_celery_results",
     "rest_framework",
     "autho",
     "sachet",
@@ -152,3 +153,7 @@ JAZZMIN_SETTINGS = {
 from sugarlib.constants import REDIS_HOST_CANE, REDIS_PORT_CANE  # noqa
 
 CELERY_BROKER_URL = f"redis://{REDIS_HOST_CANE}:{REDIS_PORT_CANE}//"
+
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_RESULT_EXTENDED =True
