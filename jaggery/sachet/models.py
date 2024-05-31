@@ -57,7 +57,7 @@ class Catalog(BaseModel):
         ),
     )
     latest_version = models.CharField(max_length=255)
-    latest_expiry = models.DateTimeField(null=True, blank=True)
+    latest_expiry = models.DateTimeField()
 
     @property
     def is_expired(self):
@@ -204,7 +204,7 @@ class Catalog(BaseModel):
         nodes = {}
         for i in catalogs:
             node_data = {
-                "expires_on": str(get_local_isotime(i.expires_on)),
+                "expires_on": str(get_local_isotime(i.latest_expiry)) if i.latest_expiry else None,
                 "url": i.get_node_url(),
                 "is_live": i.is_live,
                 "sub_catalogs": i.sub_catalogs,
