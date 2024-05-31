@@ -16,7 +16,7 @@ services:
       - .env
 
   jaggery:
-    image: mucize-jaggery
+    image: sugarcane-jaggery
     container_name: ${PROJECT_NAME}-jaggery
     build:
       context: ./jaggery
@@ -36,7 +36,7 @@ services:
       - db
   
   jaggery-celery:
-    image: mucize-jaggery
+    image: sugarcane-jaggery
     container_name: ${PROJECT_NAME}-jaggery-celery
     command: sh -c "celery -A jaggery worker -l INFO"
     working_dir: "/app/jaggery"
@@ -53,7 +53,7 @@ services:
       - db
 
   jaggery-beat:
-    image: mucize-jaggery
+    image: sugarcane-jaggery
     container_name: ${PROJECT_NAME}-jaggery-beat
     command: sh -c "celery -A jaggery beat -l INFO"
     working_dir: "/app/jaggery"
@@ -70,7 +70,7 @@ services:
       - db
 
   sugarcane:
-    image: mucize-sugarcane
+    image: sugarcane-server
     container_name: ${PROJECT_NAME}-server
     build:
       context: ./sugarcane
