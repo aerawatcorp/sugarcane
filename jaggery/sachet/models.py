@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 class Catalog(BaseModel):
-    """Store information related to catalog"""
+    """Sachet information related to catalog"""
 
     name = models.CharField(max_length=255, db_index=True, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
@@ -48,7 +48,7 @@ class Catalog(BaseModel):
 
     ttl = models.IntegerField(
         default=100,
-        help_text=_("Default time to live in seconds for the catalog stores"),
+        help_text=_("Default time to live in seconds for the catalog sachets"),
     )
     is_live = models.BooleanField(
         default=False,
@@ -56,12 +56,12 @@ class Catalog(BaseModel):
             "If set to true, the client should directly initiate request ignoring the cache"
         ),
     )
-    latest_version = models.CharField(max_length=255)
-    latest_expiry = models.DateTimeField()
+    latest_version = models.CharField(max_length=255, null=True, blank=True)
+    latest_expiry = models.DateTimeField(null=True, blank=True)
 
     @property
     def is_expired(self):
-        return self.latest_expiry < get_local_time()
+        return self.latest_expiry < get_local_time() if self.latest_expiry else True
 
     def __str__(self) -> str:
         return self.name
@@ -80,23 +80,23 @@ class Catalog(BaseModel):
         """The url from which the current node data is retrieved"""
         return NODE_API_URL.format(node_name=self.slug, version=self.latest_version)
 
-    def get_or_create_latest_store(self, sub_catalog: str = None, force: bool=False, **kwargs) -> "Store":
-        """Get latest store with version
-        :param force: If set to true will force to get latest store disregarding the expiry date.
+    def get_or_create_latest_store(self, sub_catalog: str = None, force: bool=False, **kwargs) -> "Sachet":
+        """Get latest sachet with version
+        :param force: If set to true will force to get latest sachet disregarding the expiry date.
         """
         if sub_catalog and sub_catalog not in self.sub_catalogs:
             raise InvalidSubCatalogException(f"Invalid {sub_catalog} for catalog")
 
-        store: Store = self.stores.filter(
+        sachet: Sachet = self.sachets.filter(
             version=self.latest_version, is_active=True, sub_catalog=sub_catalog, is_obsolete=False
         ).last()
 
-        if not store or store.is_expired or self.is_expired or force:
-            store = self.fetch_main_catalog_content(**kwargs)
+        if not sachet or sachet.is_expired or self.is_expired or self.latest_version is None or force:
+            sachet = self.fetch_main_catalog_content(**kwargs)
 
             if sub_catalog:
-                store = self.fetch_sub_catalog_content(sub_catalog, **kwargs)
-        return store
+                sachet = self.fetch_sub_catalog_content(sub_catalog, **kwargs)
+        return sachet
 
     @classmethod
     def can_build_cache(self, key: str) -> bool:
@@ -122,7 +122,7 @@ class Catalog(BaseModel):
 
     @transaction.atomic
     def fetch_sub_catalog_content(self, sub_catalog: str, **kwargs):
-        """Build new version of the store"""
+        """Build new version of the sachet"""
         if sub_catalog and sub_catalog not in self.sub_catalogs:
             raise InvalidSubCatalogException(f"Invalid {sub_catalog} for catalog")
 
@@ -131,7 +131,7 @@ class Catalog(BaseModel):
 
             expires_on = get_local_time() + timedelta(seconds=self.ttl)
 
-            store = Store.new(
+            sachet = Sachet.new(
                 self, sub_catalog, expires_on, self.latest_version, fetch_content=True, **kwargs
             )
 
@@ -142,13 +142,13 @@ class Catalog(BaseModel):
                 f"\n{exp} {traceback.format_exc()}"
             )
             self.end_build_lock(sub_catalog)
-            raise WriteToCacheError("Could not build new store")
+            raise WriteToCacheError("Could not build new sachet")
 
-        return store
+        return sachet
 
     @transaction.atomic
     def fetch_main_catalog_content(self, **kwargs):
-        """Build new version of the store"""
+        """Build new version of the sachet"""
         try:
             self.start_build_lock()
 
@@ -156,7 +156,7 @@ class Catalog(BaseModel):
             expires_on = now + timedelta(seconds=self.ttl)
 
             version_by_timestamp = int(now.timestamp())
-            store = Store.new(
+            sachet = Sachet.new(
                 self, None, expires_on, version_by_timestamp, fetch_content=True, **kwargs
             )
 
@@ -172,9 +172,9 @@ class Catalog(BaseModel):
                 f"\n{exp} {traceback.format_exc()}"
             )
             self.end_build_lock()
-            raise WriteToCacheError("Could not build new store")
+            raise WriteToCacheError("Could not build new sachet")
 
-        return store
+        return sachet
 
     @classmethod
     def get_master_schema(cls):
@@ -189,14 +189,14 @@ class Catalog(BaseModel):
         }
 
         # Get the distinct catalogs list
-        expires_on_subquery = Store.objects.filter(
+        expires_on_subquery = Sachet.objects.filter(
             catalog=OuterRef("pk"), version=OuterRef("latest_version")
         ).values("expires_on")[:1]
 
         # Annotate the Catalog queryset with the expires_on field from the subquery,
         # and use Coalesce to handle None values
         catalogs = (
-            Catalog.objects.filter(is_obsolete=False)
+            Catalog.objects.filter(is_obsolete=False, latest_version__isnull=False, latest_expiry__isnull=False)
             .annotate(expires_on=Coalesce(Subquery(expires_on_subquery), Value(None)))
             .order_by("-id")
         )
@@ -218,18 +218,18 @@ class Catalog(BaseModel):
         return cache_data, expires_on
 
 
-class Store(BaseModel):
-    """Store information related to cataolog store"""
+class Sachet(BaseModel):
+    """Sachet information related to cataolog sachet"""
 
     catalog = models.ForeignKey(
-        Catalog, on_delete=models.PROTECT, related_name="stores"
+        Catalog, on_delete=models.PROTECT, related_name="sachets"
     )
     sub_catalog = models.CharField(max_length=255, null=True, blank=True)
     url = models.URLField(help_text=_("URL to get the data from"))
 
     has_content = models.BooleanField(
         default=False,
-        help_text=_("If store is not yet ready with the cached content set to False"),
+        help_text=_("If sachet is not yet ready with the cached content set to False"),
     )
     content = models.JSONField(default=dict, blank=True)
 
@@ -237,7 +237,7 @@ class Store(BaseModel):
     expires_on = models.DateTimeField()
 
     is_active = models.BooleanField(
-        default=True, help_text=_("Define if the version store is active")
+        default=True, help_text=_("Define if the version sachet is active")
     )
     remarks = models.CharField(max_length=255, null=True, blank=True)
 
@@ -260,13 +260,13 @@ class Store(BaseModel):
         **kwargs
     ):
         """
-        Create a new store for the catalog.
-        Expecting the store to be the latest version for the catalog.
+        Create a new sachet for the catalog.
+        Expecting the sachet to be the latest version for the catalog.
         """
-        old_version_store = cls.objects.filter(catalog=catalog, sub_catalog=sub_catalog).last()
-        if old_version_store:
-            old_version_store.is_active = False
-            old_version_store.save(update_fields=["is_active", "updated_on"])
+        old_version_sachet = cls.objects.filter(catalog=catalog, sub_catalog=sub_catalog).last()
+        if old_version_sachet:
+            old_version_sachet.is_active = False
+            old_version_sachet.save(update_fields=["is_active", "updated_on"])
 
         obj, _ = cls.objects.get_or_create(
             catalog=catalog,
@@ -288,9 +288,9 @@ class Store(BaseModel):
         """Get new data from request url"""
         response = requests.get(self.url, timeout=REQUEST_TIMEOUT, headers=dict(headers))
         if not response.ok:
-            logger.error(f"[STORE] Fetch data error idx - {self.idx} \n{response.content}")
+            logger.error(f"[SACHET] Fetch data error idx - {self.idx} \n{response.content}")
             raise WriteToCacheError(
-                f"[STORE CACHE] Error response from ({self.url}) for store idx - {self.idx}"
+                f"[SACHET CACHE] Error response from ({self.url}) for sachet idx - {self.idx}"
             )
         return response.json()
 

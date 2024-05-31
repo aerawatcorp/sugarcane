@@ -1,5 +1,7 @@
 import logging
 
+from django.db.models import Q
+
 from jaggery.celery import app
 from sachet.models import Catalog
 
@@ -29,7 +31,7 @@ def fetch_expired_catalogs_content():
     """Fetch the expired catalogs contents"""
 
     now = get_local_time()
-    catalogs = Catalog.objects.filter(latest_expiry__lte=now, is_obsolete=False, is_live=False)
+    catalogs = Catalog.objects.filter(Q(latest_expiry__lte=now) | Q(latest_expiry__isnull=True), is_obsolete=False, is_live=False)
     for i in catalogs:
         fetch_catalog_content.delay(i.id)
     return True
