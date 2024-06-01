@@ -16,7 +16,12 @@ from sugarlib.constants import (
     MASTER_JAGGERY_API_URL,
     NODE_JAGGERY_API_URL,
 )
-from sugarcane.core.helpers import json_response, get_request_data
+from sugarcane.core.helpers import (
+    json_response,
+    get_request_data,
+    cache_hit_headers,
+    cache_miss_headers,
+)
 from sugarlib.helpers import etag_master, etag_node, build_url
 from sugarlib.redis_client import r1_cane as r1
 from sugarlib.redis_helpers import r_get, r_master_etag, r_set
@@ -34,43 +39,49 @@ def master():
     if ttl is not False:
         flask_app.logger.info("[MASTER] Return master data from cache")
         # Return cache HIT data
+        _headers = cache_hit_headers()
+        _headers.update({"Etag": etag_master(cached_master["updated_on"])})
         return json_response(
             cached_master,
             is_json=True,
-            headers={
-                "X-Cache": "HIT",
-                "Etag": etag_master(cached_master["updated_on"]),
-            },
+            headers=_headers,
         )
 
-    # In case of cache MISS, retrieve the data
-    if MASTER_JAGGERY_API_URL:
-        flask_app.logger.info("[MASTER] Initiate retrieve master data")
-        url = build_url(JAGGERY_BASE_URL, MASTER_JAGGERY_API_URL)
-        response = requests.get(url, headers=dict(request.headers))
-        if not response.ok:
-            flask_app.logger.error(
-                f"[MASTER] Could not fetch master data {response.content}"
-            )
-            abort(503)
+    if not MASTER_JAGGERY_API_URL:
+        abort(503, "Master data not available. Please check the configuration")
 
+    flask_app.logger.info("[MASTER] Initiate retrieve master data")
+    url = build_url(JAGGERY_BASE_URL, MASTER_JAGGERY_API_URL)
+    response = requests.get(url, headers=dict(request.headers))
+    if not response or not response.ok:
+        flask_app.logger.error(
+            f"[MASTER] JAGGERY ERROR : Could not fetch master data {response.content}"
+        )
+        abort(503, "Unable to fetch master data")
+
+    try:
         master_data = response.json()
+    except Exception as e:
+        flask_app.logger.error(
+            f"[MASTER] JAGGERY ERROR :  Could not parse master data {e}"
+        )
+        abort(503, "Unable to read master. Please try again later.")
 
-        # Set in memory cache in case of cache MISS
-        flask_app.logger.info("[MASTER] Set master data in cache")
-        r_set(r1, MASTER_KEY, master_data, ttl=MASTER_TTL)
+    # Set in memory cache in case of cache MISS
+    flask_app.logger.info("[MASTER] Set master data in cache")
+    r_set(r1, MASTER_KEY, master_data, ttl=MASTER_TTL)
 
-        for _, v in (master_data.get("nodes") or {}).items():
-            v.pop("version", None)
-            v.pop("updated_on", None)
+    for _, v in (master_data.get("nodes") or {}).items():
+        # @TODO: Why are we popping these keys?
+        v.pop("version", None)
+        v.pop("updated_on", None)
 
-        flask_app.logger.info("[MASTER] Set master verbose data in cache")
-        r_set(r1, MASTER_KEY_VERBOSED, master_data, ttl=MASTER_TTL)
-        etag = etag_master(master_data["updated_on"])
-        r_master_etag(r1, etag)
-        return json_response(data=master_data, headers={"X-Cache": "MISS"}, etag=etag)
-    else:
-        abort(503)
+    flask_app.logger.info("[MASTER] Set master verbose data in cache")
+    r_set(r1, MASTER_KEY_VERBOSED, master_data, ttl=MASTER_TTL)
+    # TODO: The implementation of etag needs to be revisited
+    etag = etag_master(master_data["updated_on"])
+    r_master_etag(r1, etag)
+    return json_response(data=master_data, headers=cache_miss_headers(), etag=etag)
 
 
 @blueprint.route("/r/<version>/<node_name>", methods=["GET"])
@@ -90,7 +101,7 @@ def node(version, node_name):
             f"[NODE] Return {verbosed_versioned_key} node data from cache"
         )
         # Return cache HIT data
-        return json_response(node_data, headers={"X-Cache": "HIT"}, etag=etag)
+        return json_response(node_data, headers=cache_hit_headers(), etag=etag)
 
     if NODE_JAGGERY_API_URL:
         flask_app.logger.info(
@@ -120,7 +131,7 @@ def node(version, node_name):
         r_set(r1, verbosed_versioned_key, node_data, ttl=MASTER_TTL)
         return json_response(
             node_data,
-            headers={"X-Cache": "MISS"},
+            headers=cache_miss_headers(),
             etag=etag,
         )
     else:
@@ -143,6 +154,7 @@ def composite(context):
         version, node_name = split_url_name[2], split_url_name[3]
         query_params = value["params"]
 
+        # TODO: test_request_context ??
         with flask_app.test_request_context(
             f"/r/{version}/{node_name}",
             query_string=query_params,
@@ -150,6 +162,8 @@ def composite(context):
         ):
             response = node(version, node_name)
 
-        response_data.update({key: {"status": 200, "data": response.json["data"]}})
+        response_data.update(
+            {key: {"status": 200, "data": response.json["data"]}}
+        )  # TODO: Response should be resonse.json only, as we are not decorating the response as of now
 
     return json_response(response_data, headers={"X-Cache": "COMPOSITE"})

@@ -20,3 +20,11 @@ def json_response(data, is_json=False, headers={}, etag=None):
     if etag:
         response.headers["Etag"] = etag
     return response
+
+
+def cache_hit_headers():
+    return {"X-Cache": "HIT"}
+
+
+def cache_miss_headers():
+    return {"X-Cache": "MISS"}

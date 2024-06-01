@@ -12,8 +12,9 @@ def home():
         {
             "message": "Welcome to the Sugarcane Server",
             "apis": {
-                "master": "/cdn/master",
-                "nodes": "/cdn/get/<version>/<node_name>",
+                "master": "/master",
+                "nodes": "/r/<version>/<slug>",
+                "composite": "/composite/<context>",
             },
         }
     )
