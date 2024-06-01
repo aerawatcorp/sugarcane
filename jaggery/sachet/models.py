@@ -80,7 +80,9 @@ class Catalog(BaseModel):
         """The url from which the current node data is retrieved"""
         return NODE_API_URL.format(node_name=self.slug, version=self.latest_version)
 
-    def get_or_create_latest_store(self, sub_catalog: str = None, force: bool=False, **kwargs) -> "Sachet":
+    def get_or_create_latest_store(
+        self, sub_catalog: str = None, force: bool = False, **kwargs
+    ) -> "Sachet":
         """Get latest sachet with version
         :param force: If set to true will force to get latest sachet disregarding the expiry date.
         """
@@ -88,10 +90,19 @@ class Catalog(BaseModel):
             raise InvalidSubCatalogException(f"Invalid {sub_catalog} for catalog")
 
         sachet: Sachet = self.sachets.filter(
-            version=self.latest_version, is_active=True, sub_catalog=sub_catalog, is_obsolete=False
+            version=self.latest_version,
+            is_active=True,
+            sub_catalog=sub_catalog,
+            is_obsolete=False,
         ).last()
 
-        if not sachet or sachet.is_expired or self.is_expired or self.latest_version is None or force:
+        if (
+            not sachet
+            or sachet.is_expired
+            or self.is_expired
+            or self.latest_version is None
+            or force
+        ):
             sachet = self.fetch_main_catalog_content(**kwargs)
 
             if sub_catalog:
@@ -132,7 +143,12 @@ class Catalog(BaseModel):
             expires_on = get_local_time() + timedelta(seconds=self.ttl)
 
             sachet = Sachet.new(
-                self, sub_catalog, expires_on, self.latest_version, fetch_content=True, **kwargs
+                self,
+                sub_catalog,
+                expires_on,
+                self.latest_version,
+                fetch_content=True,
+                **kwargs,
             )
 
             self.end_build_lock(sub_catalog)
@@ -157,7 +173,12 @@ class Catalog(BaseModel):
 
             version_by_timestamp = int(now.timestamp())
             sachet = Sachet.new(
-                self, None, expires_on, version_by_timestamp, fetch_content=True, **kwargs
+                self,
+                None,
+                expires_on,
+                version_by_timestamp,
+                fetch_content=True,
+                **kwargs,
             )
 
             obj = Catalog.objects.select_for_update().get(pk=self.pk)
@@ -196,7 +217,11 @@ class Catalog(BaseModel):
         # Annotate the Catalog queryset with the expires_on field from the subquery,
         # and use Coalesce to handle None values
         catalogs = (
-            Catalog.objects.filter(is_obsolete=False, latest_version__isnull=False, latest_expiry__isnull=False)
+            Catalog.objects.filter(
+                is_obsolete=False,
+                latest_version__isnull=False,
+                latest_expiry__isnull=False,
+            )
             .annotate(expires_on=Coalesce(Subquery(expires_on_subquery), Value(None)))
             .order_by("-id")
         )
@@ -204,10 +229,12 @@ class Catalog(BaseModel):
         nodes = {}
         for i in catalogs:
             node_data = {
-                "expires_on": str(get_local_isotime(i.latest_expiry)) if i.latest_expiry else None,
+                "expires_on": (
+                    str(get_local_isotime(i.latest_expiry)) if i.latest_expiry else None
+                ),
                 "url": i.get_node_url(),
                 "is_live": i.is_live,
-                "sub_catalogs": i.sub_catalogs,
+                "subs": i.sub_catalogs,
                 "version": i.latest_version,
                 "updated_on": str(i.updated_on),
             }
@@ -257,13 +284,15 @@ class Sachet(BaseModel):
         expires_on: datetime,
         version: str,
         fetch_content: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """
         Create a new sachet for the catalog.
         Expecting the sachet to be the latest version for the catalog.
         """
-        old_version_sachet = cls.objects.filter(catalog=catalog, sub_catalog=sub_catalog).last()
+        old_version_sachet = cls.objects.filter(
+            catalog=catalog, sub_catalog=sub_catalog
+        ).last()
         if old_version_sachet:
             old_version_sachet.is_active = False
             old_version_sachet.save(update_fields=["is_active", "updated_on"])
@@ -289,17 +318,21 @@ class Sachet(BaseModel):
         new_headers = {}
         for key, value in headers.items():
             if key in accepted_headers:
-                new_headers.update({
-                    key: value
-                })
+                new_headers.update({key: value})
 
         return new_headers
-    
+
     def request_data(self, headers: dict = {}) -> dict:
         """Get new data from request url"""
-        response = requests.get(self.url, timeout=REQUEST_TIMEOUT, headers=self._get_accepted_headers(dict(headers)))
+        response = requests.get(
+            self.url,
+            timeout=REQUEST_TIMEOUT,
+            headers=self._get_accepted_headers(dict(headers)),
+        )
         if not response.ok:
-            logger.error(f"[SACHET] Fetch data error idx - {self.idx} \n{response.content}")
+            logger.error(
+                f"[SACHET] Fetch data error idx - {self.idx} \n{response.content}"
+            )
             raise WriteToCacheError(
                 f"[SACHET CACHE] Error response from ({self.url}) for sachet idx - {self.idx}"
             )

@@ -118,8 +118,10 @@ class SachetAdmin(admin.ModelAdmin):
     def rebuild_node_schema(self, request, pk):
         sachet = Sachet.objects.get(pk=pk)
         # Might need to change the headers
-        obj = sachet.catalog.get_or_create_latest_store(sachet.sub_catalog, force=True, headers=request.headers)
-        obj_url = reverse('admin:sachet_store_change', args=[obj.pk])
+        obj = sachet.catalog.get_or_create_latest_store(
+            sachet.sub_catalog, force=True, headers=request.headers
+        )
+        obj_url = reverse("admin:sachet_store_change", args=[obj.pk])
 
         message = format_html(
             f'Node rebuild completed <a href="{obj_url}" style="color:#ffffff">{obj}</a>',

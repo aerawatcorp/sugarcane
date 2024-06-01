@@ -65,7 +65,9 @@ def master():
         flask_app.logger.error(
             f"[MASTER] JAGGERY ERROR :  Could not parse master data {e}"
         )
-        abort(503, "Unable to read master. Please try again later.")
+        abort(503, response.content)
+        abort(404, response.content)
+        abort(503, "Unable to read master. Please try again later. ")
 
     # Set in memory cache in case of cache MISS
     flask_app.logger.info("[MASTER] Set master data in cache")
@@ -167,3 +169,10 @@ def composite(context):
         )  # TODO: Response should be resonse.json only, as we are not decorating the response as of now
 
     return json_response(response_data, headers={"X-Cache": "COMPOSITE"})
+
+
+@blueprint.route("/latest/<catalog_name>", methods=["GET"])
+def latest_node(catalog_name):
+    # Fetch the latest version and respond that
+    # @TODO:
+    return json_response({})
