@@ -69,7 +69,7 @@ ROOT_URLCONF = "jaggery.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": ["templates"],
+        "DIRS": ["templates", BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -154,23 +154,23 @@ from sugarlib.constants import REDIS_HOST_CANE, REDIS_PORT_CANE  # noqa
 
 CELERY_BROKER_URL = f"redis://{REDIS_HOST_CANE}:{REDIS_PORT_CANE}/"
 
-CELERY_RESULT_BACKEND = 'django-cache'
-CELERY_CACHE_BACKEND = 'celery-cache'
-CELERY_RESULT_EXTENDED =True
+CELERY_RESULT_BACKEND = "django-cache"
+CELERY_CACHE_BACKEND = "celery-cache"
+CELERY_RESULT_EXTENDED = True
 
 CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': f'redis://{REDIS_HOST_CANE}:{REDIS_PORT_CANE}/',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST_CANE}:{REDIS_PORT_CANE}/",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
     },
-    'celery-cache': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': f'redis://{REDIS_HOST_CANE}:{REDIS_PORT_CANE}/3',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
+    "celery-cache": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST_CANE}:{REDIS_PORT_CANE}/3",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    },
 }
