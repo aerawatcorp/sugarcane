@@ -235,6 +235,7 @@ class Catalog(BaseModel):
                 "url": i.get_node_url(),
                 "is_live": i.is_live,
                 "subs": i.sub_catalogs,
+                "latest_version": i.latest_version,
                 "version": i.latest_version,
                 "updated_on": str(i.updated_on),
             }
