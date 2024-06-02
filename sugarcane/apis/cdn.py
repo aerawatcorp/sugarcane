@@ -2,7 +2,6 @@ from flask import Blueprint, abort
 from flask import request
 from urllib.parse import urlencode
 
-from core.init import flask_app
 from sugarcane.core.helpers import json_response, get_request_data
 from sugarcane.helpers.cdn import (
     fetch_node_data,
@@ -34,7 +33,7 @@ def master():
 def node(version, node_name):
     """Get nodes data"""
     args_dict = request.args.to_dict()
-    sub_catalog = urlencode(args_dict) if args_dict else "root"
+    sub_catalog = urlencode(args_dict) if args_dict else "_"
 
     node_response = fetch_cached_node_data(version, node_name, sub_catalog)
     if node_response.status is True:
@@ -64,22 +63,27 @@ def composite(context):
 
         version, node_name = split_url_name[2], split_url_name[3]
         query_params = value["params"]
+        sub_catalog = urlencode(query_params) if query_params else "_"
 
-        # TODO: test_request_context ??
-        with flask_app.test_request_context(
-            f"/r/{version}/{node_name}",
-            query_string=query_params,
-            headers=dict(request.headers),
-        ):
-            response = node(version, node_name)
+        node_response = fetch_cached_node_data(version, node_name, sub_catalog)
+        if node_response.status is True:
+            node_data = node_response.data
+        else:
+            try:
+                node_response = fetch_node_data(
+                    version, node_name, sub_catalog, query_params, dict(request.headers)
+                )
+                node_data = node_response.data
+            except ServiceUnavailableException:
+                pass
 
         response_data.update(
             {
                 key: {
-                    "status": 200,
-                    "data": response.json["data"],
-                    "expires_on": response.json["expires_on"],
-                    "version": response.json["version"],
+                    "status": 200 if node_response.status is True else 503,
+                    "data": node_data["data"],
+                    "expires_on": node_data["expires_on"],
+                    "version": node_data["version"],
                 }
             }
         )

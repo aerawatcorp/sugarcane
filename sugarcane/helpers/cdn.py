@@ -21,7 +21,7 @@ from sugarlib.constants import (
 from sugarlib.helpers import etag_node, build_url, etag_master, r_master_etag
 
 
-def fetch_master_data(headers: dict = {}):
+def fetch_master_data(headers: dict = {}) -> NodeResponse:
     if not MASTER_JAGGERY_API_URL:
         raise ServiceUnavailableException(
             "Master data not available. Please check the configuration"
@@ -63,10 +63,12 @@ def fetch_master_data(headers: dict = {}):
     etag = etag_master(master_data["updated_on"])
     r_master_etag(r1, etag)
 
-    return NodeResponse(master_data, headers=cache_miss_headers(), etag=etag)
+    return NodeResponse(
+        data=master_data, headers=cache_miss_headers(), etag=etag, status=True
+    )
 
 
-def fetch_cached_master_data():
+def fetch_cached_master_data() -> NodeResponse:
     # Retrieve data from in memory cache
     cached_master, ttl = r_get(r1, MASTER_KEY_VERBOSED)
 
@@ -80,7 +82,13 @@ def fetch_cached_master_data():
     return EmptyNodeResponse()
 
 
-def fetch_node_data(version, node_name, sub_catalog=None, params={}, headers={}):
+def fetch_node_data(
+    version: str,
+    node_name: str,
+    sub_catalog=None,
+    params: dict = {},
+    headers: dict = {},
+) -> NodeResponse:
     if not NODE_JAGGERY_API_URL:
         raise ServiceUnavailableException
 
@@ -120,7 +128,7 @@ def fetch_node_data(version, node_name, sub_catalog=None, params={}, headers={})
     )
 
 
-def fetch_cached_node_data(version, node_name, sub_catalog=None) -> NodeResponse:
+def fetch_cached_node_data(version: str, node_name, sub_catalog=None) -> NodeResponse:
     """Get nodes data"""
     verbosed_versioned_key = f"{node_name}-{sub_catalog}-v:{version}"
     etag = etag_node(node_name, version)
