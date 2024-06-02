@@ -14,7 +14,7 @@ from sugarlib.constants import (
     JAGGERY_BASE_URL,
     NODE_JAGGERY_API_URL,
     MASTER_TTL,
-    MASTER_KEY_VERBOSED,
+    MASTER_KEY_TERSED,
     MASTER_JAGGERY_API_URL,
     MASTER_KEY,
 )
@@ -57,7 +57,7 @@ def fetch_master_data(headers: dict = {}) -> NodeResponse:
         v.pop("updated_on", None)
 
     flask_app.logger.info("[MASTER] Set master verbose data in cache")
-    r_set(r1, MASTER_KEY_VERBOSED, master_data, ttl=MASTER_TTL)
+    r_set(r1, MASTER_KEY_TERSED, master_data, ttl=MASTER_TTL)
 
     # TODO: The implementation of etag needs to be revisited
     etag = etag_master(master_data["updated_on"])
@@ -70,7 +70,7 @@ def fetch_master_data(headers: dict = {}) -> NodeResponse:
 
 def fetch_cached_master_data() -> NodeResponse:
     # Retrieve data from in memory cache
-    cached_master, ttl = r_get(r1, MASTER_KEY_VERBOSED)
+    cached_master, ttl = r_get(r1, MASTER_KEY_TERSED)
 
     if ttl is not False:
         flask_app.logger.info("[MASTER] Return master data from cache")
@@ -95,16 +95,16 @@ def fetch_node_data(
     etag = etag_node(node_name, version)
 
     versioned_key = f"{node_name}-{sub_catalog}:{version}"
-    verbosed_versioned_key = f"{node_name}-{sub_catalog}-v:{version}"
+    tersed_versioned_key = f"{node_name}-{sub_catalog}-t:{version}"
 
     flask_app.logger.info(
-        f"[NODE] Initiate retrieve {verbosed_versioned_key} node data"
+        f"[NODE] Initiate retrieve {tersed_versioned_key} node data"
     )
     url = build_url(JAGGERY_BASE_URL, NODE_JAGGERY_API_URL.format(node_name=node_name))
     response = requests.get(url, params=params, headers=dict(headers))
     if not response.ok:
         flask_app.logger.error(
-            f"[NODE] Could not fetch {verbosed_versioned_key} node data {response.content}"
+            f"[NODE] Could not fetch {tersed_versioned_key} node data {response.content}"
         )
         raise ServiceUnavailableException
 
@@ -118,8 +118,8 @@ def fetch_node_data(
     flask_app.logger.info(f"[NODE] Set {versioned_key} data in cache")
     r_set(r1, versioned_key, node_data, ttl=ttl_seconds)
 
-    flask_app.logger.info(f"[NODE] Set {verbosed_versioned_key} data in cache")
-    r_set(r1, verbosed_versioned_key, node_data, ttl=MASTER_TTL)
+    flask_app.logger.info(f"[NODE] Set {tersed_versioned_key} data in cache")
+    r_set(r1, tersed_versioned_key, node_data, ttl=MASTER_TTL)
 
     # Set latest version meta in cachenode_response
     r_set(r1, f"{node_name}:version", node_data["version"])
@@ -130,15 +130,15 @@ def fetch_node_data(
 
 def fetch_cached_node_data(version: str, node_name, sub_catalog=None) -> NodeResponse:
     """Get nodes data"""
-    verbosed_versioned_key = f"{node_name}-{sub_catalog}-v:{version}"
+    tersed_versioned_key = f"{node_name}-{sub_catalog}-v:{version}"
     etag = etag_node(node_name, version)
 
     # Retrieve data from in memory cache
-    node_data, node_ttl = r_get(r1, verbosed_versioned_key)
+    node_data, node_ttl = r_get(r1, tersed_versioned_key)
 
     if node_ttl is not False:
         flask_app.logger.info(
-            f"[NODE] Return {verbosed_versioned_key} node data from cache"
+            f"[NODE] Return {tersed_versioned_key} node data from cache"
         )
         # Return cache HIT data
         return NodeResponse(
