@@ -16,11 +16,10 @@ app.conf.beat_schedule = {
     # Every minute
     "Fetch Expired Catalog Contents": {
         "task": "sachet.tasks.fetch_expired_catalogs_content",
-        "schedule": timedelta(seconds=60)
+        "schedule": timedelta(seconds=60),
     },
-
     "Celery Result Cleanup": {
         "task": "celery.backend_cleanup",
-        "schedule": crontab(hour=12, minute=0)
-    }
+        "schedule": crontab(hour=12, minute=0),
+    },
 }

@@ -8,7 +8,7 @@ from django.contrib import messages
 
 from sachet.models import Catalog, Sachet
 from sachet.tasks import fetch_catalog_content
-from sugarlib.constants import MASTER_KEY, MASTER_KEY_VERBOSED
+from sugarlib.constants import MASTER_KEY, MASTER_KEY_TERSED
 from sugarlib.redis_client import r1_cane as r1
 from sugarlib.redis_helpers import r_delete
 
@@ -63,7 +63,7 @@ class CatalogAdmin(admin.ModelAdmin):
 
     def invalidate_master_cache(self, request):
         r_delete(r1, MASTER_KEY)
-        r_delete(r1, MASTER_KEY_VERBOSED)
+        r_delete(r1, MASTER_KEY_TERSED)
         logger.info(
             f"[MASTER] Master rebuild invalidated by {request.user} ({request.user.id})"
         )
