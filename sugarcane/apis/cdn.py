@@ -1,8 +1,5 @@
-import pytz
 import requests
 
-from datetime import datetime
-from dateutil.parser import parse
 from flask import Blueprint, abort
 from flask import request
 from urllib.parse import urlencode
@@ -14,7 +11,6 @@ from sugarlib.constants import (
     MASTER_TTL,
     JAGGERY_BASE_URL,
     MASTER_JAGGERY_API_URL,
-    NODE_JAGGERY_API_URL,
 )
 from sugarcane.core.helpers import (
     json_response,
@@ -22,7 +18,9 @@ from sugarcane.core.helpers import (
     cache_hit_headers,
     cache_miss_headers,
 )
-from sugarlib.helpers import etag_master, etag_node, build_url
+from sugarcane.helpers.cdn import fetch_node_data, fetch_cached_node_data
+from sugarcane.helpers.exceptions import ServiceUnavailableException
+from sugarlib.helpers import etag_master, build_url
 from sugarlib.redis_client import r1_cane as r1
 from sugarlib.redis_helpers import r_get, r_master_etag, r_set
 
@@ -89,53 +87,18 @@ def node(version, node_name):
     """Get nodes data"""
     args_dict = request.args.to_dict()
     sub_catalog = urlencode(args_dict) if args_dict else "root"
-    versioned_key = f"{node_name}-{sub_catalog}:{version}"
-    verbosed_versioned_key = f"{node_name}-{sub_catalog}-v:{version}"
-    etag = etag_node(node_name, version)
 
-    # Retrieve data from in memory cache
-    node_data, node_ttl = r_get(r1, verbosed_versioned_key)
+    node_response = fetch_cached_node_data(version, node_name, sub_catalog)
+    if node_response.status is True:
+        return node_response.json_response()
 
-    if node_ttl is not False:
-        flask_app.logger.info(
-            f"[NODE] Return {verbosed_versioned_key} node data from cache"
+    try:
+        node_response = fetch_node_data(
+            version, node_name, sub_catalog, args_dict, request.headers
         )
-        # Return cache HIT data
-        return json_response(node_data, headers=cache_hit_headers(), etag=etag)
-
-    if NODE_JAGGERY_API_URL:
-        flask_app.logger.info(
-            f"[NODE] Initiate retrieve {verbosed_versioned_key} node data"
-        )
-        url = build_url(
-            JAGGERY_BASE_URL, NODE_JAGGERY_API_URL.format(node_name=node_name)
-        )
-        response = requests.get(url, params=request.args, headers=dict(request.headers))
-        if not response.ok:
-            flask_app.logger.error(
-                f"[NODE] Could not fetch {verbosed_versioned_key} node data {response.content}"
-            )
-            abort(503)
-
-        node_data = response.json()
-        expires_on = node_data["expires_on"]
-        expires_on_datetime = parse(expires_on, fuzzy=True)
-
-        ttl_seconds = (expires_on_datetime - datetime.now(pytz.utc)).seconds
-
-        # Set in memory cache in case of cache MISS
-        flask_app.logger.info(f"[NODE] Set {versioned_key} data in cache")
-        r_set(r1, versioned_key, node_data, ttl=ttl_seconds)
-
-        flask_app.logger.info(f"[NODE] Set {verbosed_versioned_key} data in cache")
-        r_set(r1, verbosed_versioned_key, node_data, ttl=MASTER_TTL)
-        return json_response(
-            node_data,
-            headers=cache_miss_headers(),
-            etag=etag,
-        )
-    else:
-        abort(503)
+        return node_response.json_response()
+    except ServiceUnavailableException as exp:
+        abort(503, exp.message)
 
 
 @blueprint.route("/composite/<context>", methods=["POST"])
