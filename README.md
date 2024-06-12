@@ -131,3 +131,15 @@ While serving the endpoints
 ## X-CACHE headers
 - X-CACHE = HIT (served from Redis)
 - X-CACHE = MISS (served from the content file)
+- 
+
+
+## Sponsored by
+- Aerawat Corp
+
+## Supported by
+- Khalti
+- Prixa Technologies
+- Sparrow SMS
+- Sageflick
+- RXPIN
